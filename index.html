@@ -7,8 +7,46 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <title>NutriScan</title>
+<link rel="manifest" id="pwa-manifest">
+<link rel="apple-touch-icon" id="apple-touch-icon">
+<meta name="apple-mobile-web-app-title" content="NutriScan">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script>
+// PWA icons — pre-built base64 PNGs, injected inline
+(function() {
+  var i192 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAAF6UlEQVR4nO3d23kbORCEUVDfJrHOwUrLCslKa52DFYb9oKU8oueCO7q7/vMskdBMFYAZUuQtGfPvt/9+rR4Dxnl7fb6tHsPW0sEQdqS0thTTn5jQ48zsMkx7MoKPErOKMPxJCD5ajC7CsAcn+OhpVBG6PyjBx0i9i/DU88EIP0brnbEubSL4WKHHatC8AhB+rNIje00FIPxYrTWD1QUg/LCiJYtVBSD8sKY2k8UFIPywqiabRQUg/LCuNKPZBSD88KIkq1kFIPzwJjezlwUg/PAqJ7td3woBeHNaAGZ/eHeV4cMCEH5EcZZltkCQtlsAZn9Ec5RpVgBI+6sAzP6Iai/brACQ9qkAzP6I7jHjrACQ9lEAZn+o2GadFQDSKACkPaXE9gd67plnBYA0CgBpFADSKACk3bgAhjJWAEijAJBGASCNAkAaBYA0CgBpFADSKACkUQBIowCQRgEgjQJA2j+rB6Dk5/evWT/35eXH4JHgjneDDpQb+CsUYhwK0Fmv0B+hDH1RgE5GB/8RReiDAjSaHfxHFKENd4EarA6/lTF4RgEqWQqepbF4wxaokPWwsSUqwwpQwHr4U/IxRksoQCZPwfI01tXYAmXoGairLcrM5wJvhRiuNISPP89sPhYrwIXaAPaefa2MIxquAU5YCl3tY7KCnGMFOFATnFmzreWxecM1QCczA/bl5UfzzP74+6oFYQXYURquVeGpGefV76gVgWuARisDU/rcOYVRu2agAA/UAqCOAjSwsF0YMQalSYACVLIQ/jtLY/GGAmwozXx4RwEqWJxxLY7JAwoAabwQhl1H28FoKw0rwP/Y/+eJdpwoQCGrM+DMYEYqAQUIYEUgo5SAAkAaBYA0CgBpFADSKEAAK+5MWb0bVooCBDH7P9KioACFotz+qxUp/CnxVogPPf7PNpJoQT/CCgBpFADSKEAFi1sli2PygAJsqOx78QcFqGRpxrU0Fm8oQAMLwbMwBs8owAO2QVooQKOVMzCzfzsKsGPERw72Rvj7oACd8C+JPlGAAzXXAj+/fx0aztrH57rmGAU4YelbWSx9W00kFOBCSwl6FKHlcQj/Nd4NOljpN7GM2kKVvNtVqTgUIEPPt0rPuoBVCnELtkCZPAXqaKw5f4Onv7MHviOskPVbkLkB5kvy3lGAStaKoBrgVmyBKlkKnKWxeEMBGlgInoUxeMYWqJPZWyKC3wcF6Gx0EQh+XxRgoF5lIPTjUICJeCXWHgoAadwFgjQKAGkUANIoAKRRAEijAJBGASCNAkAaBYA0CgBpFADSKACkUQBIowCQxgdjdcSHXvnD/wNksPYRKLkoyjUKsOE16KUoxh+yBVAJey7VUkgVgNDnUSpD+AIQ+jbRyxCyAIR+jIhlCFUAgj9HpCKEKADBXyNCEdy/Ekz414lw7F0XIMIJ8M77OXBbAO8HPhLP58JlATwf8Ki8nhN3BfB6oBV4PDfuCgD0RAEgjQJAmrsCRHjxJSqP58ZdAVLyeaCj83pOXBYgJb8HPCLP58JtAVLyfeCj8H4OXBcgJf8nwLMIxz7Eu0HvPL4Q41GE4N+FKsAdRRgjUvDvQhZgizK0iRj6rfAF2KIMeaKHfkuqAFuU4TOl0G/JFmCPSilUw76HAmTwWgyCfo0CdMSH4/pDASDN/SvBQIunt9fn2+pBACu8vT7fWAEgjQJAGgWANAoAaU8pvV8MrB4IMNM986wAkEYBIO2jAGyDoGKbdVYASPtUAFYBRPeYcVYASPurAKwCiGov26wAkLZbAFYBRHOUaVYASDssAKsAojjL8ukKQAng3VWG2QJB2mUBWAXgVU52s1YASgBvcjObvQWiBPCiJKtF1wCUANaVZrT4IpgSwKqabFbdBaIEsKY2k9W3QSkBrGjJYtPrAJQAq7VmsPmFMEqAVXpkr2t4+aRpzNBz0u36VghWA4zWO2PDAstqgJ5GTa7DZ2yKgBajdxXTtiwUASVmbaen79kpAs7Mvo5cetFKGZDS2psn5u7aUIrYrN0p/A0rnEH2dFlZvAAAAABJRU5ErkJggg==';
+  var i512 = 'data:image/png;base64,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';
+  window._icon192 = i192;
+  window._icon512 = i512;
+  
+  // apple touch icon
+  document.getElementById('apple-touch-icon').setAttribute('href', i192);
+  
+  // inline manifest blob
+  var manifest = {
+    name: 'NutriScan',
+    short_name: 'NutriScan',
+    description: 'Macro & calorie tracker with local OCR label scanning',
+    start_url: './',
+    display: 'standalone',
+    background_color: '#ffffff',
+    theme_color: '#1967d2',
+    orientation: 'portrait-primary',
+    categories: ['health','fitness'],
+    icons: [
+      {src: i192, sizes: '192x192', type: 'image/png', purpose: 'any maskable'},
+      {src: i512, sizes: '512x512', type: 'image/png', purpose: 'any maskable'}
+    ]
+  };
+  var mBlob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+  document.getElementById('pwa-manifest').setAttribute('href', URL.createObjectURL(mBlob));
+})();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Google+Sans+Display:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- Tesseract.js v5 — precision OCR -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<!-- ZXing-js — barcode/QR scanning -->
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
 <style>
 /* ── Pixel / Material 3 Expressive tokens ── */
 :root {
@@ -305,6 +343,7 @@ body{
   background:var(--surface);
   box-shadow:0 -1px 0 var(--outline2);
   padding-bottom:env(safe-area-inset-bottom);
+  position:relative;z-index:50;
 }
 .nav-item{
   flex:1;display:flex;flex-direction:column;
@@ -561,6 +600,9 @@ body{
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 #capture-canvas{display:none;}
+/* pages */
+.page{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;}
+.page.active{display:flex;}
 
 /* ── view toggle (Daily / Weekly) ── */
 .view-toggle{
@@ -585,8 +627,8 @@ body{
 }
 
 /* ── weekly summary view ── */
-#view-weekly{display:none;}
-#view-daily{display:block;}
+#view-weekly{display:none;flex:1;overflow:hidden;min-height:0;}
+#view-daily{display:flex;flex:1;overflow:hidden;min-height:0;flex-direction:column;}
 
 /* week hero card */
 .week-hero{
@@ -704,6 +746,70 @@ body{
 .wk-day-cal{font-size:15px;font-weight:700;color:var(--primary);white-space:nowrap;}
 .wk-day-cal.over{color:var(--error);}
 .wk-day-cal.zero{color:var(--on-surf3);font-weight:500;}
+
+
+/* ── scan mode tabs ── */
+.scan-tabs{display:flex;gap:0;background:var(--surf2);border-radius:var(--pill);padding:3px;margin-bottom:14px;}
+.scan-tab{flex:1;padding:8px 0;text-align:center;font-size:12px;font-weight:600;font-family:inherit;
+  border:none;background:none;color:var(--on-surf2);border-radius:var(--pill);cursor:pointer;
+  transition:background .15s,color .15s,box-shadow .15s;}
+.scan-tab.active{background:var(--surface);color:var(--primary);box-shadow:var(--sh1);}
+
+/* barcode viewfinder — horizontal */
+.vf-barcode-frame{
+  width:85%;max-width:300px;height:60px;
+  border:2px solid rgba(255,255,255,.85);border-radius:8px;
+  box-shadow:0 0 0 2000px rgba(0,0,0,.48);
+  position:relative;
+}
+.vf-barcode-line{
+  position:absolute;top:50%;left:6px;right:6px;height:2px;
+  background:rgba(255,80,80,.85);
+  box-shadow:0 0 6px rgba(255,80,80,.6);
+  animation:bsl 1.4s ease-in-out infinite;
+}
+@keyframes bsl{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* OCR confidence meter */
+.ocr-conf{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;background:var(--surf2);border-radius:var(--r-s);
+  margin-bottom:10px;font-size:12px;
+}
+.ocr-conf-bar{flex:1;height:5px;background:var(--outline);border-radius:var(--pill);overflow:hidden;}
+.ocr-conf-fill{height:100%;border-radius:var(--pill);background:var(--green);transition:width .4s;}
+.ocr-conf-label{font-weight:600;font-size:11px;min-width:30px;text-align:right;}
+
+/* auto-capture ring */
+.auto-cap-ring{
+  position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+  width:52px;height:52px;border-radius:50%;
+  background:rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.5);
+  display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);
+}
+.auto-cap-ring svg{width:22px;height:22px;}
+.auto-cap-ring.armed{border-color:var(--primary);background:rgba(25,103,210,.35);}
+.auto-cap-ring circle.prog{
+  fill:none;stroke:var(--primary);stroke-width:3;stroke-linecap:round;
+  stroke-dasharray:138;stroke-dashoffset:138;
+  transform:rotate(-90deg);transform-origin:50% 50%;
+  transition:stroke-dashoffset .1s linear;
+}
+
+/* product card from barcode */
+.product-card{
+  background:var(--green-cont);border-radius:var(--r-l);
+  padding:14px 16px;margin-bottom:12px;
+}
+.product-card .pc-name{font-size:15px;font-weight:700;color:var(--on-surf);margin-bottom:2px;}
+.product-card .pc-brand{font-size:12px;color:var(--on-surf2);margin-bottom:10px;}
+.product-card .pc-macros{display:flex;gap:8px;flex-wrap:wrap;}
+.product-card .pc-macro{
+  background:var(--surface);border-radius:var(--r-s);
+  padding:6px 10px;font-size:11px;font-weight:600;
+  color:var(--on-surf);
+}
 
 </style>
 </head>
@@ -943,58 +1049,104 @@ const SUPABASE_TABLE = 'nutriscan_logs';
 <div class="sheet" id="sh-scan">
   <div class="sheet-handle"></div>
   <div class="sheet-hdr">
-    <span class="sheet-title">Scan label</span>
+    <span class="sheet-title">Scan</span>
     <button class="ib" onclick="closeScanSheet()"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
   </div>
   <div class="sheet-body">
-    <div style="display:flex;gap:8px;margin-bottom:14px;">
-      <button class="chip chip-filled" id="smode-cam"    onclick="setScanMode('camera')">Camera</button>
-      <button class="chip chip-out"    id="smode-upload" onclick="setScanMode('upload')">Upload</button>
+
+    <!-- 3-mode tabs -->
+    <div class="scan-tabs">
+      <button class="scan-tab active" id="stab-barcode" onclick="setScanMode('barcode')">Barcode</button>
+      <button class="scan-tab"        id="stab-label"   onclick="setScanMode('label')">Nutrition label</button>
+      <button class="scan-tab"        id="stab-upload"  onclick="setScanMode('upload')">Upload</button>
     </div>
-    <!-- camera -->
-    <div id="scan-cam-area">
-      <div class="viewfinder">
-        <div class="vf-ph" id="vf-ph">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
+
+    <!-- ── BARCODE mode ── -->
+    <div id="scan-barcode-area">
+      <div class="viewfinder" id="vf-barcode">
+        <div class="vf-ph" id="vf-bc-ph">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="opacity:.5;width:36px;height:36px"><path d="M2 6h2v12H2zm3 0h1v12H5zm2 0h3v12H7zm4 0h1v12h-1zm3 0h2v12h-2zm3 0h1v12h-1zm2 0h2v12h-2z"/></svg>
+          Tap Start to scan barcode
+        </div>
+        <video id="bc-video" autoplay playsinline muted style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></video>
+        <div class="vf-overlay" id="vf-bc-overlay" style="display:none">
+          <div class="vf-barcode-frame">
+            <div class="vf-barcode-line"></div>
+          </div>
+        </div>
+        <div class="vf-hint" id="vf-bc-hint" style="display:none">Point at barcode — auto-detecting</div>
+        <button id="torch-btn-bc" onclick="toggleTorchBC()" style="position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.4);border:none;color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;font-size:15px;backdrop-filter:blur(4px)">🔦</button>
+      </div>
+      <div class="cam-btns">
+        <button class="cam-main" id="bc-start" onclick="startBarcodeScanner()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 6h2v12H2zm3 0h1v12H5zm2 0h3v12H7zm4 0h1v12h-1zm3 0h2v12h-2zm3 0h1v12h-1zm2 0h2v12h-2z"/></svg>
+          Start scanner
+        </button>
+        <button class="cam-sec" id="bc-stop" onclick="stopBarcodeScanner()" style="display:none">Stop</button>
+      </div>
+      <div id="bc-status-wrap" style="margin-top:10px"></div>
+      <div id="bc-product-wrap"></div>
+    </div>
+
+    <!-- ── LABEL OCR mode ── -->
+    <div id="scan-label-area" style="display:none">
+      <div class="viewfinder" id="vf-label">
+        <div class="vf-ph" id="vf-lb-ph">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="opacity:.5;width:36px;height:36px"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
           Tap Start camera
         </div>
-        <video id="cam-video" autoplay playsinline muted></video>
-        <img   id="cam-freeze" alt="">
+        <video id="cam-video" autoplay playsinline muted style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></video>
+        <img id="cam-freeze" alt="" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000">
         <div class="vf-overlay" id="vf-overlay" style="display:none">
           <div class="vf-frame"><div class="vf-line"></div></div>
         </div>
-        <div class="vf-hint" id="vf-hint">Align nutrition table within frame</div>
-        <button id="torch-btn" onclick="toggleTorch()">🔦</button>
+        <div class="vf-hint" id="vf-hint" style="display:none">Fill frame with nutrition table — hold steady</div>
+        <!-- auto-capture progress ring -->
+        <div class="auto-cap-ring" id="auto-cap-ring">
+          <svg viewBox="0 0 48 48" width="48" height="48" style="position:absolute;inset:0">
+            <circle class="prog" id="acr-prog" cx="24" cy="24" r="22"/>
+          </svg>
+          <svg viewBox="0 0 24 24" fill="white" width="20" height="20" style="position:relative;z-index:1"><circle cx="12" cy="12" r="8"/></svg>
+        </div>
+        <button id="torch-btn" onclick="toggleTorch()" style="position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.4);border:none;color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;font-size:15px;backdrop-filter:blur(4px)">🔦</button>
       </div>
       <div class="cam-btns">
-        <button class="cam-main" id="cam-start"   onclick="startCam()">
+        <button class="cam-main" id="cam-start" onclick="startCam()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
           Start camera
         </button>
-        <button class="cam-main" id="cam-capture" onclick="doCapture()" style="display:none">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
-          Capture
-        </button>
-        <button class="cam-sec"  id="cam-stop"    onclick="stopCam()"  style="display:none">Stop</button>
-        <button class="cam-sec"  id="cam-retry"   onclick="doRetake()" style="display:none">Retake</button>
+        <button class="cam-main" id="cam-capture" onclick="doCapture()" style="display:none">Capture</button>
+        <button class="cam-sec" id="cam-stop" onclick="stopCam()" style="display:none">Stop</button>
+        <button class="cam-sec" id="cam-retry" onclick="doRetake()" style="display:none">Retake</button>
       </div>
     </div>
-    <!-- upload -->
+
+    <!-- ── UPLOAD mode ── -->
     <div id="scan-upload-area" style="display:none">
       <div class="upload-zone" id="upload-zone">
-        <svg viewBox="0 0 24 24" fill="currentColor" style="opacity:.4"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 14H6v-2h12v2zm0-4H6v-2h12v2zm0-4H6V7h12v2z"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor" style="opacity:.4;width:32px;height:32px;display:block;margin:0 auto 8px"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 14H6v-2h12v2zm0-4H6v-2h12v2zm0-4H6V7h12v2z"/></svg>
         <div style="font-size:14px;font-weight:500">Choose photo</div>
         <div style="font-size:12px;margin-top:4px;color:var(--on-surf2)">JPG · PNG · HEIC</div>
         <input type="file" accept="image/*" onchange="handleUpload(event)">
       </div>
-      <div id="upload-preview" style="display:none;margin-top:10px;">
-        <img id="upload-img" style="width:100%;border-radius:var(--r);max-height:240px;object-fit:contain;background:#000;display:block;">
-        <button class="cam-main" onclick="runOCR('upload')" style="width:100%;margin-top:10px;">Analyse</button>
+      <div id="upload-preview" style="display:none;margin-top:10px">
+        <img id="upload-img" style="width:100%;border-radius:var(--r);max-height:220px;object-fit:contain;background:#000;display:block">
+        <button class="cam-main" onclick="runOCR('upload')" style="width:100%;margin-top:10px">Analyse label</button>
       </div>
     </div>
-    <!-- status + fields -->
+
+    <!-- OCR confidence + status (shared by label + upload) -->
+    <div id="ocr-conf-wrap" style="display:none">
+      <div class="ocr-conf">
+        <span style="font-size:11px;color:var(--on-surf2);white-space:nowrap">Confidence</span>
+        <div class="ocr-conf-bar"><div class="ocr-conf-fill" id="ocr-conf-fill" style="width:0%"></div></div>
+        <span class="ocr-conf-label" id="ocr-conf-label">0%</span>
+      </div>
+    </div>
     <div id="ocr-status-wrap"></div>
-    <div id="scan-fields" style="display:none;">
+
+    <!-- Editable result fields (shared) -->
+    <div id="scan-fields" style="display:none">
       <div class="field">
         <label class="flabel">Meal</label>
         <select class="finput" id="scan-meal">
@@ -1005,28 +1157,34 @@ const SUPABASE_TABLE = 'nutriscan_logs';
       <div class="field"><label class="flabel">Name</label><input class="finput" id="scan-name" type="text"></div>
       <div class="row2">
         <div class="field"><label class="flabel">Serving</label><input class="finput" id="scan-serving" type="number" inputmode="decimal" oninput="autoCalc('scan')"></div>
-        <div class="field">
-          <label class="flabel">Unit</label>
+        <div class="field"><label class="flabel">Unit</label>
           <select class="finput" id="scan-unit"><option>g</option><option>ml</option><option>oz</option></select>
         </div>
       </div>
       <div class="fsec">Per serving</div>
       <div class="calc-hint" id="scan-calc-hint">⚡ Calories auto-calculated from macros</div>
       <div class="row2">
-        <div class="field"><label class="flabel" style="color:var(--c-cal)">Calories</label><input class="finput" id="scan-cal"   type="number" inputmode="decimal" oninput="clearAutoFlag('scan-cal')"></div>
-        <div class="field"><label class="flabel" style="color:var(--c-prot)">Protein (g)</label><input class="finput" id="scan-prot"  type="number" inputmode="decimal" oninput="autoCalc('scan')"></div>
+        <div class="field"><label class="flabel" style="color:var(--c-cal)">Calories</label>
+          <input class="finput" id="scan-cal" type="number" inputmode="decimal" oninput="clearAutoFlag('scan-cal')"></div>
+        <div class="field"><label class="flabel" style="color:var(--c-prot)">Protein (g)</label>
+          <input class="finput" id="scan-prot" type="number" inputmode="decimal" oninput="autoCalc('scan')"></div>
       </div>
       <div class="row2">
-        <div class="field"><label class="flabel" style="color:var(--c-carb)">Carbs (g)</label><input class="finput" id="scan-carbs" type="number" inputmode="decimal" oninput="autoCalc('scan')"></div>
-        <div class="field"><label class="flabel" style="color:var(--c-fat)">Fat (g)</label>   <input class="finput" id="scan-fat"   type="number" inputmode="decimal" oninput="autoCalc('scan')"></div>
+        <div class="field"><label class="flabel" style="color:var(--c-carb)">Carbs (g)</label>
+          <input class="finput" id="scan-carbs" type="number" inputmode="decimal" oninput="autoCalc('scan')"></div>
+        <div class="field"><label class="flabel" style="color:var(--c-fat)">Fat (g)</label>
+          <input class="finput" id="scan-fat" type="number" inputmode="decimal" oninput="autoCalc('scan')"></div>
       </div>
       <div class="row2">
-        <div class="field"><label class="flabel">Fiber (g)</label><input class="finput" id="scan-fiber"  type="number" inputmode="decimal"></div>
-        <div class="field"><label class="flabel">Sodium (mg)</label><input class="finput" id="scan-sodium" type="number" inputmode="decimal"></div>
+        <div class="field"><label class="flabel">Fiber (g)</label>
+          <input class="finput" id="scan-fiber" type="number" inputmode="decimal"></div>
+        <div class="field"><label class="flabel">Sodium (mg)</label>
+          <input class="finput" id="scan-sodium" type="number" inputmode="decimal"></div>
       </div>
       <button class="btn-p" onclick="submitScan()">Add to log</button>
       <button class="btn-s" onclick="resetScan()">Scan again</button>
     </div>
+
   </div>
 </div>
 
@@ -1084,8 +1242,8 @@ const SUPABASE_TABLE = 'nutriscan_logs';
       <label class="flabel">Activity level</label>
       <select class="finput" id="td-activity">
         <option value="1.2">Sedentary (desk job, little movement)</option>
-        <option value="1.375" selected>Light (standing/walking job — your level)</option>
-        <option value="1.55">Moderate (on feet most of day + some exercise)</option>
+        <option value="1.375">Light (standing/walking job only)</option>
+        <option value="1.55" selected>Moderate (standing job + gym 3–4×/week — your level)</option>
         <option value="1.725">Active (physical job or daily training)</option>
         <option value="1.9">Very active (heavy physical work + hard training)</option>
       </select>
@@ -1118,6 +1276,18 @@ const SUPABASE_TABLE = 'nutriscan_logs';
       Not configured
     </div>
     <button class="btn-p" onclick="syncNow()">Sync now</button>
+    <div style="background:var(--surf2);border-radius:var(--r);padding:12px 14px;margin-top:12px;font-size:12px;color:var(--on-surf2);line-height:1.6;">
+      <strong style="color:var(--on-surf);display:block;margin-bottom:4px;">Supabase table SQL</strong>
+      Run this in your Supabase SQL editor:<br>
+      <code style="font-size:11px;background:var(--outline2);padding:6px 8px;border-radius:6px;display:block;margin-top:6px;color:var(--on-surf);white-space:pre-wrap;">create table if not exists nutriscan_logs (
+  id text primary key,
+  date text, meal text, name text,
+  cal int, prot int, carbs int, fat int,
+  fiber int, sugar int, sodium int,
+  serving text, unit text,
+  scanned boolean, ts bigint
+);</code>
+    </div>
     <div class="fsec" style="margin-top:20px;">Data</div>
     <button class="btn-s" onclick="exportJSON()">Export JSON</button>
     <button class="btn-d" onclick="clearAll()">Clear all data</button>
@@ -1131,20 +1301,20 @@ const SUPABASE_TABLE = 'nutriscan_logs';
 // ─────────────────────────────────────────────
 //  CONSTANTS & STATE
 // ─────────────────────────────────────────────
-const MEALS       = ['breakfast','lunch','dinner','snacks'];
-const MEAL_LABELS = {breakfast:'Breakfast',lunch:'Lunch',dinner:'Dinner',snacks:'Snacks'};
+var MEALS       = ['breakfast','lunch','dinner','snacks'];
+var MEAL_LABELS = {breakfast:'Breakfast',lunch:'Lunch',dinner:'Dinner',snacks:'Snacks'};
 
-let currentDate = isoToday();
-let camStream   = null;
-let torchOn     = false;
-let capturedB64 = null;
-let uploadedB64 = null;
+var currentDate = isoToday();
+var camStream   = null;
+var torchOn     = false;
+var capturedB64 = null;
+var uploadedB64 = null;
 
 function isoToday() {
   return new Date().toISOString().slice(0,10);
 }
 function shiftDate(iso, n) {
-  const d = new Date(iso + 'T12:00:00');
+  var d = new Date(iso + 'T12:00:00');
   d.setDate(d.getDate() + n);
   return d.toISOString().slice(0,10);
 }
@@ -1154,7 +1324,7 @@ function shiftDate(iso, n) {
 // ─────────────────────────────────────────────
 function getState() {
   try {
-    const raw = localStorage.getItem('ns3');
+    var raw = localStorage.getItem('ns3');
     return (raw ? JSON.parse(raw) : null) || mkState();
   } catch(e) {
     return mkState();
@@ -1170,7 +1340,7 @@ function saveState(s) {
   localStorage.setItem('ns3', JSON.stringify(s));
 }
 function getDay(date) {
-  const s = getState();
+  var s = getState();
   if (!s.days[date]) {
     s.days[date] = {
       meals: {breakfast:[],lunch:[],dinner:[],snacks:[]},
@@ -1180,7 +1350,7 @@ function getDay(date) {
   return s.days[date];
 }
 function saveDay(date, day) {
-  const s = getState();
+  var s = getState();
   if (!s.days) s.days = {};
   s.days[date] = day;
   saveState(s);
@@ -1190,14 +1360,14 @@ function saveDay(date, day) {
 //  RENDER TODAY
 // ─────────────────────────────────────────────
 function renderToday() {
-  const s   = getState();
-  const g   = s.goals;
-  const day = getDay(currentDate);
+  var s   = getState();
+  var g   = s.goals;
+  var day = getDay(currentDate);
 
   // totals
-  let totCal=0, totProt=0, totCarbs=0, totFat=0;
-  for (const m of MEALS) {
-    for (const it of (day.meals[m] || [])) {
+  var totCal=0, totProt=0, totCarbs=0, totFat=0;
+  for (var m of MEALS) {
+    for (var it of (day.meals[m] || [])) {
       totCal   += Number(it.cal)   || 0;
       totProt  += Number(it.prot)  || 0;
       totCarbs += Number(it.carbs) || 0;
@@ -1206,11 +1376,11 @@ function renderToday() {
   }
 
   // ring
-  const circ = 251.3;
-  const pct  = Math.min(totCal / (g.cal || 1), 1);
-  const over = totCal > g.cal;
-  const ringMain = document.getElementById('ring-main');
-  const ringOver = document.getElementById('ring-over');
+  var circ = 251.3;
+  var pct  = Math.min(totCal / (g.cal || 1), 1);
+  var over = totCal > g.cal;
+  var ringMain = document.getElementById('ring-main');
+  var ringOver = document.getElementById('ring-over');
   ringMain.style.strokeDashoffset = over ? circ : circ - circ * pct;
   ringMain.style.stroke = over ? 'transparent' : 'var(--primary)';
   ringOver.style.strokeDashoffset = over
@@ -1218,8 +1388,8 @@ function renderToday() {
     : circ;
   document.getElementById('ring-num').textContent = totCal;
 
-  const rem = g.cal - totCal;
-  const crEl = document.getElementById('cal-remain');
+  var rem = g.cal - totCal;
+  var crEl = document.getElementById('cal-remain');
   crEl.textContent = Math.abs(rem);
   crEl.className   = over ? 'cal-remain over' : 'cal-remain';
   document.getElementById('cal-tag').textContent  = over ? 'kcal over goal' : 'kcal remaining';
@@ -1240,23 +1410,23 @@ function renderToday() {
   document.getElementById('water-goal').textContent = g.water;
 
   // date label
-  const today = isoToday();
-  const d     = new Date(currentDate + 'T12:00:00');
+  var today = isoToday();
+  var d     = new Date(currentDate + 'T12:00:00');
   document.getElementById('date-label').textContent =
     currentDate === today          ? 'Today'
     : currentDate === shiftDate(today,-1) ? 'Yesterday'
     : d.toLocaleDateString('en',{weekday:'short',month:'short',day:'numeric'});
 
   // meals
-  const wrap = document.getElementById('meals-wrap');
+  var wrap = document.getElementById('meals-wrap');
   wrap.innerHTML = '';
-  for (const m of MEALS) {
-    const items = day.meals[m] || [];
-    const mCal  = items.reduce((a, i) => a + (Number(i.cal) || 0), 0);
-    const sec   = document.createElement('div');
+  for (var m of MEALS) {
+    var items = day.meals[m] || [];
+    var mCal  = items.reduce(function(a,i){ return a + (Number(i.cal)||0); }, 0);
+    var sec   = document.createElement('div');
     sec.className = 'meal-section';
 
-    const hdr = document.createElement('div');
+    var hdr = document.createElement('div');
     hdr.className = 'meal-hdr';
     hdr.innerHTML =
       '<span class="meal-label">' + MEAL_LABELS[m] + '</span>' +
@@ -1264,12 +1434,12 @@ function renderToday() {
     sec.appendChild(hdr);
 
     if (items.length > 0) {
-      const list = document.createElement('div');
+      var list = document.createElement('div');
       list.className = 'food-list';
       items.forEach(function(it, idx) {
-        const row = document.createElement('div');
+        var row = document.createElement('div');
         row.className = 'food-row';
-        const macros = 'P ' + (it.prot||0) + 'g · C ' + (it.carbs||0) + 'g · F ' + (it.fat||0) + 'g' +
+        var macros = 'P ' + (it.prot||0) + 'g · C ' + (it.carbs||0) + 'g · F ' + (it.fat||0) + 'g' +
           (it.serving ? ' · ' + it.serving + (it.unit||'g') : '') +
           (it.scanned ? ' · 📷' : '');
         row.innerHTML =
@@ -1289,7 +1459,7 @@ function renderToday() {
       sec.appendChild(list);
     }
 
-    const addRow = document.createElement('div');
+    var addRow = document.createElement('div');
     addRow.className = 'add-row';
     addRow.innerHTML =
       '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>' +
@@ -1305,18 +1475,18 @@ function renderToday() {
 //  DIARY
 // ─────────────────────────────────────────────
 function renderDiary() {
-  const s     = getState();
-  const g     = s.goals;
-  const today = isoToday();
-  const days  = [];
+  var s     = getState();
+  var g     = s.goals;
+  var today = isoToday();
+  var days  = [];
 
-  for (let i = 6; i >= 0; i--) {
-    const key  = shiftDate(today, -i);
-    const data = s.days[key];
-    let cal=0, prot=0, carbs=0, fat=0;
+  for (var i = 6; i >= 0; i--) {
+    var key  = shiftDate(today, -i);
+    var data = s.days[key];
+    var cal=0, prot=0, carbs=0, fat=0;
     if (data) {
-      for (const m of MEALS) {
-        for (const it of (data.meals[m] || [])) {
+      for (var m of MEALS) {
+        for (var it of (data.meals[m] || [])) {
           cal   += Number(it.cal)   || 0;
           prot  += Number(it.prot)  || 0;
           carbs += Number(it.carbs) || 0;
@@ -1324,41 +1494,41 @@ function renderDiary() {
         }
       }
     }
-    const d   = new Date(key + 'T12:00:00');
-    const lbl = i===0 ? 'Today'
+    var d   = new Date(key + 'T12:00:00');
+    var lbl = i===0 ? 'Today'
       : i===1 ? 'Yesterday'
       : d.toLocaleDateString('en',{weekday:'short',month:'short',day:'numeric'});
     days.push({key,lbl,cal,prot,carbs,fat});
   }
 
   // bar chart
-  const maxCal   = Math.max.apply(null, days.map(function(d){return d.cal;}));
-  const chartMax = Math.max(maxCal, g.cal, 1);
-  const W=280, H=60, slots=7, gap=10;
-  const sw = (W - (slots-1)*gap) / slots;
-  let svg = '';
+  var maxCal   = Math.max.apply(null, days.map(function(d){return d.cal;}));
+  var chartMax = Math.max(maxCal, g.cal, 1);
+  var W=280, H=60, slots=7, gap=10;
+  var sw = (W - (slots-1)*gap) / slots;
+  var svg = '';
   days.forEach(function(d, i) {
-    const x  = i * (sw + gap);
-    const bh = Math.max(Math.round((d.cal / chartMax) * H), d.cal > 0 ? 3 : 0);
-    const y  = H - bh;
-    const isT = d.key === today;
+    var x  = i * (sw + gap);
+    var bh = Math.max(Math.round((d.cal / chartMax) * H), d.cal > 0 ? 3 : 0);
+    var y  = H - bh;
+    var isT = d.key === today;
     svg += '<rect x="' + x + '" y="' + y + '" width="' + sw + '" height="' + bh + '" rx="4" fill="' + (isT ? 'var(--primary)' : 'var(--outline)') + '"/>';
     svg += '<text x="' + (x + sw/2) + '" y="' + (H+14) + '" text-anchor="middle" font-size="9" fill="var(--on-surf2)" font-family="Roboto,sans-serif">' + d.lbl.split(' ')[0] + '</text>';
     if (d.cal > 0) {
       svg += '<text x="' + (x + sw/2) + '" y="' + (y-3) + '" text-anchor="middle" font-size="9" fill="' + (isT ? 'var(--primary)' : 'var(--on-surf2)') + '" font-family="Roboto,sans-serif">' + d.cal + '</text>';
     }
   });
-  const gy = H - Math.round((g.cal / chartMax) * H);
+  var gy = H - Math.round((g.cal / chartMax) * H);
   svg += '<line x1="0" y1="' + gy + '" x2="' + W + '" y2="' + gy + '" stroke="var(--c-cal)" stroke-width="1" stroke-dasharray="4,3" opacity=".7"/>';
   document.getElementById('week-svg').innerHTML = svg;
 
   // list
-  const list = document.getElementById('diary-list');
+  var list = document.getElementById('diary-list');
   list.innerHTML = '';
   var reversed = days.slice().reverse();
   reversed.forEach(function(d) {
     if (!d.cal && d.key !== today) return;
-    const card = document.createElement('div');
+    var card = document.createElement('div');
     card.className = 'diary-day';
     card.innerHTML =
       '<div>' +
@@ -1391,11 +1561,11 @@ function openAddSheet(meal) {
   openSheet('sh-add');
 }
 function submitAdd() {
-  const name = document.getElementById('add-name').value.trim();
-  const cal  = Number(document.getElementById('add-cal').value);
+  var name = document.getElementById('add-name').value.trim();
+  var cal  = Number(document.getElementById('add-cal').value);
   if (!name) { showToast('Enter a food name'); return; }
   if (!cal)  { showToast('Enter calories');    return; }
-  const entry = {
+  var entry = {
     name, cal,
     prot:    Number(document.getElementById('add-prot').value)  || 0,
     carbs:   Number(document.getElementById('add-carbs').value) || 0,
@@ -1476,7 +1646,7 @@ function resetAutoCalc(prefix) {
 }
 
 function logEntry(meal, entry) {
-  const day = getDay(currentDate);
+  var day = getDay(currentDate);
   day.meals[meal].push(entry);
   saveDay(currentDate, day);
   renderToday();
@@ -1484,7 +1654,7 @@ function logEntry(meal, entry) {
   syncAuto();
 }
 function delItem(meal, idx) {
-  const day = getDay(currentDate);
+  var day = getDay(currentDate);
   day.meals[meal].splice(idx, 1);
   saveDay(currentDate, day);
   renderToday();
@@ -1495,7 +1665,7 @@ function delItem(meal, idx) {
 //  WATER
 // ─────────────────────────────────────────────
 function addWater(n) {
-  const day  = getDay(currentDate);
+  var day  = getDay(currentDate);
   day.water  = Math.max(0, (day.water || 0) + n);
   saveDay(currentDate, day);
   renderToday();
@@ -1505,7 +1675,7 @@ function addWater(n) {
 //  GOALS
 // ─────────────────────────────────────────────
 function openGoalsSheet() {
-  const g = getState().goals;
+  var g = getState().goals;
   document.getElementById('g-cal').value   = g.cal;
   document.getElementById('g-prot').value  = g.prot;
   document.getElementById('g-carbs').value = g.carbs;
@@ -1514,7 +1684,7 @@ function openGoalsSheet() {
   document.getElementById('g-water').value = g.water;
 }
 function saveGoals() {
-  const s   = getState();
+  var s   = getState();
   s.goals   = {
     cal:   Number(document.getElementById('g-cal').value)   || 2000,
     prot:  Number(document.getElementById('g-prot').value)  || 160,
@@ -1536,12 +1706,12 @@ function saveGoals() {
 //  Protein target: 2.2g/kg for muscle retention
 // ─────────────────────────────────────────────
 function calcTDEE() {
-  const age      = Number(document.getElementById('td-age').value);
-  const sex      = document.getElementById('td-sex').value;
-  const weight   = Number(document.getElementById('td-weight').value);
-  const height   = Number(document.getElementById('td-height').value);
-  const activity = Number(document.getElementById('td-activity').value);
-  const goal     = document.getElementById('td-goal').value;
+  var age      = Number(document.getElementById('td-age').value);
+  var sex      = document.getElementById('td-sex').value;
+  var weight   = Number(document.getElementById('td-weight').value);
+  var height   = Number(document.getElementById('td-height').value);
+  var activity = Number(document.getElementById('td-activity').value);
+  var goal     = document.getElementById('td-goal').value;
 
   if (!age || !weight || !height) {
     showToast('Fill in age, weight and height');
@@ -1549,17 +1719,17 @@ function calcTDEE() {
   }
 
   // Mifflin-St Jeor BMR
-  let bmr;
+  var bmr;
   if (sex === 'm') {
     bmr = 10 * weight + 6.25 * height - 5 * age + 5;
   } else {
     bmr = 10 * weight + 6.25 * height - 5 * age - 161;
   }
 
-  const tdee = Math.round(bmr * activity);
+  var tdee = Math.round(bmr * activity);
 
   // goal-based calorie targets
-  let targetCal, deficit, description, advice;
+  var targetCal, deficit, description, advice;
   if (goal === 'recomp') {
     targetCal   = tdee - 200;
     deficit     = -200;
@@ -1583,24 +1753,24 @@ function calcTDEE() {
   }
 
   // macro targets — for recomp/cut: protein 2.2g/kg, fat ~25% of calories, rest carbs
-  const protTarget  = Math.round(2.2 * weight);
-  const fatTarget   = Math.round((targetCal * 0.25) / 9);
-  const carbTarget  = Math.round((targetCal - protTarget * 4 - fatTarget * 9) / 4);
-  const fiberTarget = Math.round(weight * 0.35); // ~0.35g per kg body weight
+  var protTarget  = Math.round(2.2 * weight);
+  var fatTarget   = Math.round((targetCal * 0.25) / 9);
+  var carbTarget  = Math.round((targetCal - protTarget * 4 - fatTarget * 9) / 4);
+  var fiberTarget = Math.round(weight * 0.35); // ~0.35g per kg body weight
 
   // BMI
-  const bmi    = (weight / ((height/100) * (height/100))).toFixed(1);
-  const bmiCat = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal weight' : bmi < 30 ? 'Overweight' : 'Obese';
+  var bmi    = (weight / ((height/100) * (height/100))).toFixed(1);
+  var bmiCat = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal weight' : bmi < 30 ? 'Overweight' : 'Obese';
 
   // what to track most — priority for recomp
-  const trackPriority = goal === 'recomp' || goal === 'cut'
+  var trackPriority = goal === 'recomp' || goal === 'cut'
     ? ['Protein (most important — hit this every day)',
        'Total calories (stay within ±100 kcal of target)',
        'Fiber (keeps you full, improves gut health)',
        'Water (8 glasses/day minimum)']
     : ['Total calories', 'Protein', 'Fiber', 'Water'];
 
-  const wrap = document.getElementById('tdee-result-wrap');
+  var wrap = document.getElementById('tdee-result-wrap');
   wrap.innerHTML =
     '<div class="tdee-result">' +
       '<div class="big">' + targetCal + ' kcal</div>' +
@@ -1623,7 +1793,7 @@ function calcTDEE() {
 }
 
 function applyTDEEGoals(cal, prot, carbs, fat, fiber) {
-  const s = getState();
+  var s = getState();
   s.goals.cal   = cal;
   s.goals.prot  = prot;
   s.goals.carbs = carbs;
@@ -1635,283 +1805,690 @@ function applyTDEEGoals(cal, prot, carbs, fat, fiber) {
   showToast('Goals updated from calculator');
 }
 
-// ─────────────────────────────────────────────
-//  CAMERA
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+//  SCAN ENGINE  —  barcode (ZXing) + OCR (Tesseract v5)
+// ═══════════════════════════════════════════════════════
+
+var camStream    = null;
+var bcStream     = null;
+var torchOn      = false;
+var torchOnBC    = false;
+var capturedB64  = null;
+var uploadedB64  = null;
+var scanMode     = 'barcode';
+var ocrWorker    = null;
+var bcReader     = null;
+var bcScanActive = false;
+var autoCapActive= false;
+var autoCapScore = 0;     // 0-100, triggers at 80
+var autoCapTimer = null;
+var rafId        = null;
+
+// ── Init Tesseract worker once for speed ──────────────────────────────────
+async function initOCRWorker() {
+  if (ocrWorker) return;
+  try {
+    ocrWorker = await Tesseract.createWorker('eng', 1, {
+      logger: function() {}
+    });
+    await ocrWorker.setParameters({
+      tessedit_pageseg_mode: '6',   // PSM 6 = uniform block of text
+      preserve_interword_spaces: '1',
+      tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,:%<>()/ \n\t-'
+    });
+  } catch(e) {
+    ocrWorker = null;
+  }
+}
+// Pre-warm worker when sheet opens
+function warmOCR() { initOCRWorker().catch(function(){}); }
+
+// ── Scan mode switcher ────────────────────────────────────────────────────
+function setScanMode(mode) {
+  scanMode = mode;
+  stopCam();
+  stopBarcodeScanner();
+
+  document.getElementById('scan-barcode-area').style.display  = mode === 'barcode' ? 'block' : 'none';
+  document.getElementById('scan-label-area').style.display    = mode === 'label'   ? 'block' : 'none';
+  document.getElementById('scan-upload-area').style.display   = mode === 'upload'  ? 'block' : 'none';
+
+  ['stab-barcode','stab-label','stab-upload'].forEach(function(id) {
+    document.getElementById(id).classList.remove('active');
+  });
+  document.getElementById('stab-' + mode).classList.add('active');
+
+  document.getElementById('ocr-status-wrap').innerHTML   = '';
+  document.getElementById('ocr-conf-wrap').style.display = 'none';
+  document.getElementById('scan-fields').style.display   = 'none';
+
+  if (mode === 'label') warmOCR();
+}
+
+// ═══════════════════════════════════════════════════════
+//  BARCODE SCANNER  —  ZXing-js
+// ═══════════════════════════════════════════════════════
+async function startBarcodeScanner() {
+  if (typeof ZXing === 'undefined') {
+    setOcrStatus('err','ZXing library not loaded. Check your internet connection.');
+    return;
+  }
+
+  var constraints = [
+    {video:{facingMode:{exact:'environment'},width:{ideal:1920},height:{ideal:1080}}},
+    {video:{facingMode:{ideal:'environment'}}},
+    {video:true}
+  ];
+  var stream = null;
+  for (var i=0; i<constraints.length; i++) {
+    try { stream = await navigator.mediaDevices.getUserMedia(constraints[i]); break; }
+    catch(e) {}
+  }
+  if (!stream) { setOcrStatus('err','Camera access denied.'); return; }
+  bcStream = stream;
+
+  var vid = document.getElementById('bc-video');
+  vid.srcObject = stream;
+  await new Promise(function(res){ vid.onloadedmetadata = res; });
+  vid.play();
+  vid.style.display = 'block';
+
+  document.getElementById('vf-bc-ph').style.display      = 'none';
+  document.getElementById('vf-bc-overlay').style.display = 'flex';
+  document.getElementById('vf-bc-hint').style.display    = 'block';
+  document.getElementById('bc-start').style.display      = 'none';
+  document.getElementById('bc-stop').style.display       = 'block';
+  document.getElementById('bc-product-wrap').innerHTML   = '';
+  document.getElementById('bc-status-wrap').innerHTML    =
+    '<div class="ocr-st loading"><div class="spin"></div>Scanning for barcode…</div>';
+
+  // torch
+  var track = stream.getVideoTracks()[0];
+  var caps  = track.getCapabilities ? track.getCapabilities() : {};
+  if (caps.torch) document.getElementById('torch-btn-bc').style.display = 'flex';
+
+  // ZXing multi-format reader
+  bcReader     = new ZXing.BrowserMultiFormatReader();
+  bcScanActive = true;
+
+  try {
+    await bcReader.decodeFromVideoDevice(null, 'bc-video', function(result, err) {
+      if (!bcScanActive) return;
+      if (result) {
+        var code = result.getText();
+        bcScanActive = false;
+        stopBarcodeScanner();
+        fetchProductByBarcode(code);
+      }
+    });
+  } catch(e) {
+    setOcrStatus('err', 'Scanner error: ' + e.message);
+  }
+}
+
+function stopBarcodeScanner() {
+  bcScanActive = false;
+  if (bcReader) {
+    try { bcReader.reset(); } catch(e) {}
+    bcReader = null;
+  }
+  if (bcStream) {
+    bcStream.getTracks().forEach(function(t){ t.stop(); });
+    bcStream = null;
+  }
+  torchOnBC = false;
+  var vid = document.getElementById('bc-video');
+  if (vid) { vid.pause(); vid.srcObject = null; vid.style.display = 'none'; }
+  var ph = document.getElementById('vf-bc-ph');
+  if (ph) ph.style.display = 'flex';
+  var ov = document.getElementById('vf-bc-overlay');
+  if (ov) ov.style.display = 'none';
+  var hint = document.getElementById('vf-bc-hint');
+  if (hint) hint.style.display = 'none';
+  var tb = document.getElementById('torch-btn-bc');
+  if (tb) tb.style.display = 'none';
+  var bs = document.getElementById('bc-start');
+  if (bs) bs.style.display = 'flex';
+  var bst = document.getElementById('bc-stop');
+  if (bst) bst.style.display = 'none';
+}
+
+async function toggleTorchBC() {
+  if (!bcStream) return;
+  torchOnBC = !torchOnBC;
+  try {
+    var track = bcStream.getVideoTracks()[0];
+    await track.applyConstraints({advanced:[{torch:torchOnBC}]});
+    document.getElementById('torch-btn-bc').style.background =
+      torchOnBC ? 'rgba(255,220,0,.4)' : 'rgba(0,0,0,.4)';
+  } catch(e) { torchOnBC = false; }
+}
+
+// ── Fetch product from Open Food Facts (free, no key) ────────────────────
+async function fetchProductByBarcode(barcode) {
+  var statusEl = document.getElementById('bc-status-wrap');
+  statusEl.innerHTML = '<div class="ocr-st loading"><div class="spin"></div>Looking up ' + barcode + '…</div>';
+
+  try {
+    var res = await fetch(
+      'https://world.openfoodfacts.org/api/v2/product/' + barcode + '.json?fields=product_name,brands,nutriments,serving_size,serving_quantity',
+      { signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined }
+    );
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+
+    if (!data || data.status === 0 || !data.product) {
+      statusEl.innerHTML = '<div class="ocr-st err">Product not found in database. Try OCR scan instead.</div>';
+      return;
+    }
+
+    var p  = data.product;
+    var n  = p.nutriments || {};
+    var sn = p.product_name || 'Unknown product';
+    var br = p.brands || '';
+    var sv = parseFloat(p.serving_quantity) || parseFloat(p.serving_size) || 100;
+
+    // OFF nutriments are per 100g — scale to serving
+    var scale = sv / 100;
+    var cal   = roundN((n['energy-kcal_100g'] || n['energy-kcal'] || 0) * scale);
+    var prot  = roundN((n['proteins_100g']    || n['proteins']    || 0) * scale);
+    var carbs = roundN((n['carbohydrates_100g']||n['carbohydrates']|| 0) * scale);
+    var fat   = roundN((n['fat_100g']         || n['fat']         || 0) * scale);
+    var fiber = roundN((n['fiber_100g']        || n['fiber']       || 0) * scale);
+    var sod   = roundN((n['sodium_100g']       || n['sodium']      || 0) * scale * 1000); // g→mg
+
+    statusEl.innerHTML = '<div class="ocr-st ok">✓ Found: ' + esc(sn) + (br ? ' · ' + esc(br) : '') + '</div>';
+
+    // Show product card
+    document.getElementById('bc-product-wrap').innerHTML =
+      '<div class="product-card">' +
+        '<div class="pc-name">' + esc(sn) + '</div>' +
+        (br ? '<div class="pc-brand">' + esc(br) + '</div>' : '') +
+        '<div class="pc-macros">' +
+          '<div class="pc-macro" style="color:var(--c-cal)">' + cal + ' kcal</div>' +
+          '<div class="pc-macro" style="color:var(--c-prot)">P ' + prot + 'g</div>' +
+          '<div class="pc-macro" style="color:var(--c-carb)">C ' + carbs + 'g</div>' +
+          '<div class="pc-macro" style="color:var(--c-fat)">F ' + fat + 'g</div>' +
+        '</div>' +
+      '</div>';
+
+    // Populate editable fields
+    resetAutoCalc('scan');
+    setField('scan-name',    sn);
+    setField('scan-serving', sv);
+    setField('scan-cal',     cal);
+    setField('scan-prot',    prot);
+    setField('scan-carbs',   carbs);
+    setField('scan-fat',     fat);
+    setField('scan-fiber',   fiber);
+    setField('scan-sodium',  sod);
+    document.getElementById('scan-unit').value = 'g';
+    document.getElementById('scan-fields').style.display = 'block';
+
+  } catch(e) {
+    statusEl.innerHTML = '<div class="ocr-st err">Lookup failed: ' + esc(e.message) + '</div>';
+  }
+}
+
+function roundN(v) { return Math.round((v || 0) * 10) / 10; }
+function setField(id, val) {
+  var el = document.getElementById(id);
+  if (el && val !== null && val !== undefined && val !== '') el.value = val;
+}
+
+// ═══════════════════════════════════════════════════════
+//  LABEL OCR CAMERA  —  Tesseract v5 + auto-capture
+// ═══════════════════════════════════════════════════════
 async function startCam() {
-  const configs = [
+  var constraints = [
     {video:{facingMode:{exact:'environment'},width:{ideal:3840},height:{ideal:2160}}},
     {video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}},
     {video:{facingMode:'environment'}},
     {video:true}
   ];
-  let stream = null;
-  for (const cfg of configs) {
-    try { stream = await navigator.mediaDevices.getUserMedia(cfg); break; }
-    catch(e) { /* try next */ }
+  var stream = null;
+  for (var i=0; i<constraints.length; i++) {
+    try { stream = await navigator.mediaDevices.getUserMedia(constraints[i]); break; }
+    catch(e) {}
   }
-  if (!stream) {
-    setOcrStatus('err', 'Camera access denied. Use Upload instead.');
-    return;
-  }
+  if (!stream) { setOcrStatus('err','Camera access denied. Use Upload instead.'); return; }
   camStream = stream;
-  const vid = document.getElementById('cam-video');
+
+  var vid = document.getElementById('cam-video');
   vid.srcObject = stream;
-  await new Promise(function(resolve) { vid.onloadedmetadata = resolve; });
+  await new Promise(function(res){ vid.onloadedmetadata = res; });
   vid.play();
-  vid.style.display       = 'block';
-  document.getElementById('cam-freeze').style.display  = 'none';
-  document.getElementById('vf-ph').style.display       = 'none';
-  document.getElementById('vf-overlay').style.display  = 'flex';
-  document.getElementById('vf-hint').style.display     = 'block';
-  document.getElementById('cam-start').style.display   = 'none';
-  document.getElementById('cam-capture').style.display = 'flex';
-  document.getElementById('cam-stop').style.display    = 'block';
-  document.getElementById('cam-retry').style.display   = 'none';
-  // torch
-  const track = stream.getVideoTracks()[0];
-  const caps  = track.getCapabilities ? track.getCapabilities() : {};
-  if (caps.torch) {
-    document.getElementById('torch-btn').style.display = 'flex';
-  }
+  vid.style.display = 'block';
+
+  document.getElementById('vf-lb-ph').style.display      = 'none';
+  document.getElementById('cam-freeze').style.display    = 'none';
+  document.getElementById('vf-overlay').style.display    = 'flex';
+  document.getElementById('vf-hint').style.display       = 'block';
+  document.getElementById('cam-start').style.display     = 'none';
+  document.getElementById('cam-capture').style.display   = 'flex';
+  document.getElementById('cam-stop').style.display      = 'block';
+  document.getElementById('cam-retry').style.display     = 'none';
+  document.getElementById('auto-cap-ring').style.display = 'flex';
+
+  var track = stream.getVideoTracks()[0];
+  var caps  = track.getCapabilities ? track.getCapabilities() : {};
+  if (caps.torch) document.getElementById('torch-btn').style.display = 'flex';
+
+  // Start auto-capture analysis
+  autoCapScore  = 0;
+  autoCapActive = true;
+  analyzeFrameLoop();
 }
 
 function stopCam() {
+  autoCapActive = false;
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
   torchOn = false;
   if (camStream) {
-    camStream.getTracks().forEach(function(t) { t.stop(); });
+    camStream.getTracks().forEach(function(t){ t.stop(); });
     camStream = null;
   }
-  const vid = document.getElementById('cam-video');
-  vid.pause();
-  vid.srcObject = null;
-  vid.style.display = 'none';
-  document.getElementById('cam-freeze').style.display  = 'none';
-  document.getElementById('vf-ph').style.display       = 'flex';
-  document.getElementById('vf-overlay').style.display  = 'none';
-  document.getElementById('vf-hint').style.display     = 'none';
-  document.getElementById('torch-btn').style.display   = 'none';
-  document.getElementById('cam-start').style.display   = 'flex';
-  document.getElementById('cam-capture').style.display = 'none';
-  document.getElementById('cam-stop').style.display    = 'none';
-  document.getElementById('cam-retry').style.display   = 'none';
+  var vid = document.getElementById('cam-video');
+  if (!vid) return;
+  vid.pause(); vid.srcObject = null; vid.style.display = 'none';
+
+  var el;
+  if ((el=document.getElementById('vf-lb-ph')))     el.style.display = 'flex';
+  if ((el=document.getElementById('cam-freeze')))   el.style.display = 'none';
+  if ((el=document.getElementById('vf-overlay')))   el.style.display = 'none';
+  if ((el=document.getElementById('vf-hint')))      el.style.display = 'none';
+  if ((el=document.getElementById('torch-btn')))    el.style.display = 'none';
+  if ((el=document.getElementById('auto-cap-ring')))el.style.display = 'none';
+  if ((el=document.getElementById('cam-start')))    el.style.display = 'flex';
+  if ((el=document.getElementById('cam-capture')))  el.style.display = 'none';
+  if ((el=document.getElementById('cam-stop')))     el.style.display = 'none';
+  if ((el=document.getElementById('cam-retry')))    el.style.display = 'none';
+
+  autoCapScore = 0;
+  updateAutoCapRing(0);
 }
 
 async function toggleTorch() {
   if (!camStream) return;
   torchOn = !torchOn;
   try {
-    const track = camStream.getVideoTracks()[0];
+    var track = camStream.getVideoTracks()[0];
     await track.applyConstraints({advanced:[{torch:torchOn}]});
     document.getElementById('torch-btn').style.background =
       torchOn ? 'rgba(255,220,0,.4)' : 'rgba(0,0,0,.4)';
-  } catch(e) {
-    torchOn = false;
-  }
+  } catch(e) { torchOn = false; }
 }
 
+// ── Auto-capture: analyze frame brightness variance ───────────────────────
+// High variance = lots of edges = likely text = good label frame
+function analyzeFrameLoop() {
+  if (!autoCapActive || !camStream) return;
+
+  var vid = document.getElementById('cam-video');
+  if (!vid || !vid.videoWidth) {
+    rafId = requestAnimationFrame(analyzeFrameLoop);
+    return;
+  }
+
+  // Sample a center 160x120 crop of the video frame at low res for speed
+  var SAMPLE_W = 160, SAMPLE_H = 120;
+  var cv  = document.getElementById('capture-canvas');
+  cv.width = SAMPLE_W; cv.height = SAMPLE_H;
+  var ctx = cv.getContext('2d');
+
+  // Center crop
+  var sx = (vid.videoWidth  - SAMPLE_W * (vid.videoWidth / SAMPLE_W)) / 2;
+  var sy = (vid.videoHeight - SAMPLE_H * (vid.videoHeight / SAMPLE_H)) / 2;
+  ctx.drawImage(vid, 0, 0, vid.videoWidth, vid.videoHeight, 0, 0, SAMPLE_W, SAMPLE_H);
+
+  var imgData = ctx.getImageData(0, 0, SAMPLE_W, SAMPLE_H);
+  var px = imgData.data;
+
+  // Compute luminance variance
+  var sum = 0, sum2 = 0, n = px.length / 4;
+  for (var i = 0; i < px.length; i += 4) {
+    var l = 0.299 * px[i] + 0.587 * px[i+1] + 0.114 * px[i+2];
+    sum  += l;
+    sum2 += l * l;
+  }
+  var mean     = sum / n;
+  var variance = sum2 / n - mean * mean;
+  // Nutrition labels: high variance (sharp text on white) → >600 typical
+  // Blurry / dark / moving: <200
+
+  var frameScore = Math.min(Math.max((variance - 100) / 8, 0), 100);
+
+  // Smooth the score (exponential moving average)
+  autoCapScore = autoCapScore * 0.75 + frameScore * 0.25;
+
+  updateAutoCapRing(autoCapScore);
+
+  // Trigger auto-capture at score ≥ 75 sustained
+  if (autoCapScore >= 75) {
+    autoCapActive = false;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    setTimeout(function(){ doCapture(); }, 120); // tiny delay for last frame
+    return;
+  }
+
+  rafId = requestAnimationFrame(analyzeFrameLoop);
+}
+
+function updateAutoCapRing(score) {
+  var ring    = document.getElementById('auto-cap-ring');
+  var progEl  = document.getElementById('acr-prog');
+  if (!ring || !progEl) return;
+  var circ    = 138; // 2π×22
+  var offset  = circ - (circ * score / 100);
+  progEl.style.strokeDashoffset = offset;
+  ring.className = 'auto-cap-ring' + (score >= 60 ? ' armed' : '');
+}
+
+// ── Capture + preprocess + OCR ────────────────────────────────────────────
 function doCapture() {
-  const vid = document.getElementById('cam-video');
-  if (!vid.videoWidth) { showToast('Camera not ready'); return; }
-  const cv  = document.getElementById('capture-canvas');
+  var vid = document.getElementById('cam-video');
+  if (!vid || !vid.videoWidth) { showToast('Camera not ready'); return; }
+
+  var cv  = document.getElementById('capture-canvas');
   cv.width  = vid.videoWidth;
   cv.height = vid.videoHeight;
-  const ctx = cv.getContext('2d');
+  var ctx = cv.getContext('2d');
   ctx.drawImage(vid, 0, 0);
-  enhanceCanvas(ctx, cv.width, cv.height);
-  capturedB64 = cv.toDataURL('image/jpeg', 0.95);
-  // freeze frame
-  const freeze = document.getElementById('cam-freeze');
-  freeze.src            = capturedB64;
-  freeze.style.display  = 'block';
-  document.getElementById('cam-video').style.display   = 'none';
-  document.getElementById('vf-overlay').style.display  = 'none';
-  document.getElementById('vf-hint').style.display     = 'none';
-  document.getElementById('cam-capture').style.display = 'none';
-  document.getElementById('cam-stop').style.display    = 'none';
-  document.getElementById('cam-retry').style.display   = 'block';
+  preprocessCanvas(ctx, cv.width, cv.height);
+  capturedB64 = cv.toDataURL('image/jpeg', 0.96);
+
+  // Show freeze frame
+  var freeze = document.getElementById('cam-freeze');
+  freeze.src = capturedB64;
+  freeze.style.display = 'block';
+  var vidEl = document.getElementById('cam-video');
+  vidEl.style.display = 'none';
+  document.getElementById('vf-overlay').style.display    = 'none';
+  document.getElementById('vf-hint').style.display       = 'none';
+  document.getElementById('auto-cap-ring').style.display = 'none';
+  document.getElementById('cam-capture').style.display   = 'none';
+  document.getElementById('cam-stop').style.display      = 'none';
+  document.getElementById('cam-retry').style.display     = 'block';
   stopCam();
   runOCR('camera');
 }
 
 function doRetake() {
   capturedB64 = null;
-  document.getElementById('cam-freeze').style.display   = 'none';
-  document.getElementById('cam-retry').style.display    = 'none';
-  document.getElementById('ocr-status-wrap').innerHTML  = '';
-  document.getElementById('scan-fields').style.display  = 'none';
+  var el;
+  if ((el=document.getElementById('cam-freeze')))   el.style.display = 'none';
+  if ((el=document.getElementById('cam-retry')))    el.style.display = 'none';
+  document.getElementById('ocr-status-wrap').innerHTML   = '';
+  document.getElementById('ocr-conf-wrap').style.display = 'none';
+  document.getElementById('scan-fields').style.display   = 'none';
   startCam();
 }
 
-function enhanceCanvas(ctx, w, h) {
+// ── Image preprocessing: sharpen + binarize for OCR ──────────────────────
+function preprocessCanvas(ctx, w, h) {
   try {
-    var imgData = ctx.getImageData(0, 0, w, h);
-    var px = imgData.data;
-    var n  = px.length;
-    var minL = 255, maxL = 0;
-    for (var i = 0; i < n; i += 4) {
-      var l = 0.299*px[i] + 0.587*px[i+1] + 0.114*px[i+2];
-      if (l < minL) minL = l;
-      if (l > maxL) maxL = l;
+    var src = ctx.getImageData(0, 0, w, h);
+    var dst = ctx.createImageData(w, h);
+    var s   = src.data, d = dst.data;
+
+    // Step 1: Convert to greyscale + auto-levels
+    var grey = new Float32Array(w * h);
+    var minL=255, maxL=0;
+    for (var i=0, j=0; i<s.length; i+=4, j++) {
+      var l = 0.299*s[i] + 0.587*s[i+1] + 0.114*s[i+2];
+      grey[j] = l;
+      if (l<minL) minL=l;
+      if (l>maxL) maxL=l;
     }
-    var r = maxL - minL || 1;
-    for (var j = 0; j < n; j += 4) {
-      px[j]   = Math.min(255, ((px[j]   - minL) / r) * 255 * 1.1);
-      px[j+1] = Math.min(255, ((px[j+1] - minL) / r) * 255 * 1.1);
-      px[j+2] = Math.min(255, ((px[j+2] - minL) / r) * 255 * 1.1);
+    var range = maxL - minL || 1;
+    // Stretch contrast
+    for (var k=0; k<grey.length; k++) {
+      grey[k] = ((grey[k] - minL) / range) * 255;
     }
-    ctx.putImageData(imgData, 0, 0);
-  } catch(e) { /* skip if cross-origin */ }
+
+    // Step 2: Unsharp mask (3×3 blur subtracted from original)
+    var blur = new Float32Array(w * h);
+    for (var y=1; y<h-1; y++) {
+      for (var x=1; x<w-1; x++) {
+        var idx = y*w+x;
+        blur[idx] = (
+          grey[(y-1)*w+(x-1)] + grey[(y-1)*w+x] + grey[(y-1)*w+(x+1)] +
+          grey[y*w+(x-1)]     + grey[y*w+x]     + grey[y*w+(x+1)] +
+          grey[(y+1)*w+(x-1)] + grey[(y+1)*w+x] + grey[(y+1)*w+(x+1)]
+        ) / 9;
+      }
+    }
+    var SHARPEN_AMOUNT = 1.8;
+    for (var m=0; m<grey.length; m++) {
+      grey[m] = Math.min(255, Math.max(0, grey[m] + SHARPEN_AMOUNT * (grey[m] - blur[m])));
+    }
+
+    // Step 3: Adaptive threshold — local mean with offset
+    // Use 15×15 window
+    var WIN = 15, OFFSET = 8;
+    for (var y=0; y<h; y++) {
+      for (var x=0; x<w; x++) {
+        var idx = y*w+x;
+        var sum = 0, cnt = 0;
+        var x0=Math.max(0,x-WIN>>1), x1=Math.min(w-1,x+(WIN>>1));
+        var y0=Math.max(0,y-WIN>>1), y1=Math.min(h-1,y+(WIN>>1));
+        for (var py=y0; py<=y1; py++) {
+          for (var px=x0; px<=x1; px++) {
+            sum += grey[py*w+px]; cnt++;
+          }
+        }
+        var threshold = (sum/cnt) - OFFSET;
+        var val = grey[idx] > threshold ? 255 : 0;
+        var di = idx*4;
+        d[di]=d[di+1]=d[di+2]=val; d[di+3]=255;
+      }
+    }
+    ctx.putImageData(dst, 0, 0);
+  } catch(e) {
+    // Fallback: basic contrast stretch
+    try {
+      var img = ctx.getImageData(0,0,w,h);
+      var px  = img.data;
+      for (var i=0;i<px.length;i+=4) {
+        px[i]  =Math.min(255,px[i]*1.2);
+        px[i+1]=Math.min(255,px[i+1]*1.2);
+        px[i+2]=Math.min(255,px[i+2]*1.2);
+      }
+      ctx.putImageData(img,0,0);
+    } catch(e2) {}
+  }
 }
 
-// ─────────────────────────────────────────────
-//  UPLOAD
-// ─────────────────────────────────────────────
+// ── Upload handler ────────────────────────────────────────────────────────
 function handleUpload(e) {
   var file = e.target.files[0];
   if (!file) return;
   var reader = new FileReader();
   reader.onload = function(ev) {
     uploadedB64 = ev.target.result;
-    document.getElementById('upload-img').src          = uploadedB64;
+    document.getElementById('upload-img').src              = uploadedB64;
     document.getElementById('upload-preview').style.display = 'block';
-    document.getElementById('upload-zone').style.display    = 'none';
+    document.getElementById('upload-zone').style.display   = 'none';
   };
   reader.readAsDataURL(file);
 }
 
-// ─────────────────────────────────────────────
-//  OCR  —  Tesseract.js v5, fully local
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+//  OCR ENGINE  —  Tesseract.js v5 + precision parser
+// ═══════════════════════════════════════════════════════
 async function runOCR(source) {
   var imgSrc = source === 'camera' ? capturedB64 : uploadedB64;
   if (!imgSrc) { showToast('No image to analyse'); return; }
 
-  setOcrStatus('loading', 'Reading label on-device…');
-  document.getElementById('scan-fields').style.display = 'none';
+  setOcrStatus('loading', 'Analysing nutrition label…');
+  document.getElementById('scan-fields').style.display   = 'none';
+  document.getElementById('ocr-conf-wrap').style.display = 'none';
 
   try {
-    var result = await Tesseract.recognize(imgSrc, 'eng');
+    await initOCRWorker();
+    if (!ocrWorker) throw new Error('OCR engine failed to start');
+
+    var result = await ocrWorker.recognize(imgSrc);
     var raw    = result.data.text;
+    var conf   = Math.round(result.data.confidence || 0);
+
+    // Show confidence
+    document.getElementById('ocr-conf-wrap').style.display = 'block';
+    document.getElementById('ocr-conf-fill').style.width   = conf + '%';
+    document.getElementById('ocr-conf-fill').style.background =
+      conf >= 70 ? 'var(--green)' : conf >= 40 ? 'var(--c-cal)' : 'var(--error)';
+    document.getElementById('ocr-conf-label').textContent = conf + '%';
 
     if (!raw || raw.trim().length < 8) {
-      setOcrStatus('err', 'Could not read text. Ensure the label fills the frame and is well-lit.');
+      setOcrStatus('err', 'Could not read text. Ensure the label fills the frame and is well-lit. Try torch.');
       return;
     }
 
-    var parsed = parseLabel(raw);
-    populateFields(parsed);
+    var parsed = parseNutritionLabel(raw);
+    populateScanFields(parsed);
 
-    var hits = 0;
-    ['cal','prot','carbs','fat'].forEach(function(k) {
-      if (parsed[k] !== null && parsed[k] !== undefined) hits++;
-    });
+    var hits = [parsed.cal, parsed.prot, parsed.carbs, parsed.fat]
+      .filter(function(v){ return v !== null; }).length;
 
     if (hits === 0) {
-      setOcrStatus('err', 'No nutrition values found. Try a clearer photo or Upload mode.');
+      setOcrStatus('err', 'No values found (confidence ' + conf + '%). Try: better lighting, hold steady, torch on, or Upload mode.');
     } else {
-      setOcrStatus('ok', 'Found ' + hits + '/4 macro values — check and edit if needed.');
+      setOcrStatus('ok', '✓ ' + hits + '/4 macros read · ' + conf + '% confidence — edit any field if needed');
       document.getElementById('scan-fields').style.display = 'block';
     }
   } catch(err) {
-    setOcrStatus('err', 'OCR failed: ' + err.message);
+    setOcrStatus('err', 'OCR error: ' + err.message);
   }
 }
 
-// ─────────────────────────────────────────────
-//  LABEL PARSER  —  regex, no AI needed
-// ─────────────────────────────────────────────
-function parseLabel(text) {
-  var lower = text.toLowerCase();
-  var lines = text.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+// ═══════════════════════════════════════════════════════
+//  NUTRITION LABEL PARSER  —  table-aware line parser
+//  Much more accurate than flat regex:
+//  reads each line as "label  value unit" triplet
+// ═══════════════════════════════════════════════════════
+function parseNutritionLabel(text) {
+  // Normalise OCR artifacts
+  var lines = text
+    .replace(/\r/g,'')
+    .split('\n')
+    .map(function(l){
+      return l
+        .replace(/[lI]/g, function(m,i,s){
+          // Replace l/I only when surrounded by digits (OCR confuses 1 with l/I)
+          var before = s[i-1], after = s[i+1];
+          if (before && /\d/.test(before)) return '1';
+          if (after  && /\d/.test(after))  return '1';
+          return m;
+        })
+        .replace(/O/g, function(m,i,s){
+          var before = s[i-1], after = s[i+1];
+          if ((before && /\d/.test(before)) || (after && /\d/.test(after))) return '0';
+          return m;
+        })
+        .trim();
+    })
+    .filter(function(l){ return l.length > 0; });
 
-  function grab(patterns) {
-    for (var i = 0; i < patterns.length; i++) {
-      var m = lower.match(patterns[i]);
-      if (m && m[1]) {
-        var n = parseFloat(m[1].replace(',', '.'));
-        if (!isNaN(n)) return n;
+  var result = {
+    name: null, serving: null, unit: 'g',
+    cal: null, prot: null, carbs: null, fat: null,
+    fiber: null, sodium: null
+  };
+
+  // Number extractor — finds first number in string
+  function firstNum(s) {
+    var m = s.match(/(\d+(?:[.,]\d+)?)/);
+    return m ? parseFloat(m[1].replace(',','.')) : null;
+  }
+
+  // Process each line looking for known nutrient keywords
+  var lower = text.toLowerCase();
+
+  lines.forEach(function(line) {
+    var ll = line.toLowerCase();
+    var n  = firstNum(line);
+
+    // Calories
+    if (result.cal === null &&
+        /calorie|energie|energy|kcal|cal\b/.test(ll) &&
+        !/(per|pro|je)\s+(100|portion)/i.test(ll)) {
+      if (n !== null && n > 0 && n < 2000) result.cal = n;
+    }
+    // Protein
+    if (result.prot === null &&
+        /protein|eiwei|proteine|proteines/.test(ll)) {
+      if (n !== null) result.prot = n;
+    }
+    // Carbs (skip sugar sub-line if carbs already found)
+    if (result.carbs === null &&
+        /carbohydrate|kohlenhydrat|koolhydraat|glucide|glucid|saccharid/.test(ll) &&
+        !/sugar|sucre|zucker/.test(ll)) {
+      if (n !== null) result.carbs = n;
+    }
+    // Fat
+    if (result.fat === null &&
+        /\bfat\b|fett\b|vetten\b|lipide|matiere.grasse|grasses/.test(ll) &&
+        !/saturated|gesättigt|verzadigd|trans/.test(ll)) {
+      if (n !== null) result.fat = n;
+    }
+    // Fiber
+    if (result.fiber === null &&
+        /fiber|fibre|ballaststoff|vezels|voedingsvez/.test(ll)) {
+      if (n !== null) result.fiber = n;
+    }
+    // Sodium (mg)
+    if (result.sodium === null &&
+        /sodium|natrium|sel\b|zout\b/.test(ll)) {
+      if (n !== null) {
+        // If value looks like g (≤5) it might be salt in g; convert to sodium mg
+        result.sodium = (n <= 5 && /\bg\b/.test(ll)) ? Math.round(n * 390) : n;
       }
     }
-    return null;
+    // Serving size
+    if (result.serving === null &&
+        /serving.size|portion|per\s+\d|inhoud/.test(ll)) {
+      if (n !== null && n > 0) {
+        result.serving = n;
+        var um = ll.match(/\b(g|ml|oz|cl)\b/);
+        if (um) result.unit = um[1] === 'cl' ? 'ml' : um[1];
+      }
+    }
+  });
+
+  // Fallback: if carbs still null, try a broader match
+  if (result.carbs === null) {
+    var m = lower.match(/carb[^0-9]*?(\d+(?:[.,]\d+)?)/);
+    if (m) result.carbs = parseFloat(m[1].replace(',','.'));
   }
 
-  var cal = grab([
-    /calories[^0-9]*([0-9]+(?:\.[0-9]+)?)/,
-    /energy[^0-9]*([0-9]+(?:\.[0-9]+)?)\s*kcal/,
-    /energie[^0-9]*([0-9]+(?:\.[0-9]+)?)\s*kcal/,
-    /([0-9]+)\s*kcal/,
-  ]);
-  var prot = grab([
-    /protein[^0-9]*([0-9]+(?:[.,][0-9]+)?)\s*g/,
-    /eiwei[sß][^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-    /proteine[^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-  ]);
-  var carbs = grab([
-    /total\s+carbohydrate[^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-    /carbohydrate[^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-    /kohlenhydrate[^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-    /koolhydraten[^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-    /glucides[^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-    /carbs[^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-  ]);
-  var fat = grab([
-    /total\s+fat[^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-    /\bfat[^a-z][^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-    /vetten[^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-    /fett[^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-    /lipides[^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-  ]);
-  var fiber = grab([
-    /dietary\s+fiber[^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-    /fibre[^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-    /ballaststoffe[^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-    /vezels[^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-  ]);
-  var sodium = grab([
-    /sodium[^0-9]*([0-9]+(?:[.,][0-9]+)?)\s*mg/,
-    /natrium[^0-9]*([0-9]+(?:[.,][0-9]+)?)\s*mg/,
-    /zout[^0-9]*([0-9]+(?:[.,][0-9]+)?)/,
-  ]);
-
-  var serving = null, unit = 'g';
-  var sm = lower.match(/serving\s+size[^0-9]*([0-9]+(?:[.,][0-9]+)?)\s*(g|ml|oz)/);
-  if (sm) { serving = parseFloat(sm[1]); unit = sm[2]; }
-  else {
-    var pm = lower.match(/per\s+([0-9]+(?:[.,][0-9]+)?)\s*(g|ml|oz)/);
-    if (pm) { serving = parseFloat(pm[1]); unit = pm[2]; }
-  }
-
-  var name = null;
-  for (var i = 0; i < lines.length; i++) {
+  // Product name: first non-numeric line that looks like a title
+  for (var i=0; i<lines.length; i++) {
     var l = lines[i];
-    if (l.length > 2 && l.length < 60 && /[A-Za-z]/.test(l) &&
-        !/calorie|protein|fat|carb|sodium|energy|vitamin|ingredient|nutrition/i.test(l)) {
-      name = l.replace(/[^A-Za-z0-9 '&()-]/g,'').trim();
-      if (name.length > 2) break;
+    if (l.length > 2 && l.length < 60 &&
+        /[A-Za-z]/.test(l) &&
+        !/calorie|protein|fat|carb|sodium|energy|vitamin|ingredient|nutrition|serving|portion|per\s+100/i.test(l) &&
+        !/^\d/.test(l)) {
+      result.name = l.replace(/[^A-Za-z0-9 '&%()+-]/g,'').trim();
+      if (result.name.length > 2) break;
     }
   }
 
-  return {name:name, serving:serving, unit:unit, cal:cal, prot:prot, carbs:carbs, fat:fat, fiber:fiber, sodium:sodium};
+  return result;
 }
 
-function populateFields(p) {
+function populateScanFields(p) {
   resetAutoCalc('scan');
-  function set(id, val) {
-    var el = document.getElementById(id);
-    if (el) el.value = (val !== null && val !== undefined) ? val : '';
-  }
-  set('scan-name',    p.name);
-  set('scan-serving', p.serving);
-  set('scan-cal',     p.cal);
-  set('scan-prot',    p.prot);
-  set('scan-carbs',   p.carbs);
-  set('scan-fat',     p.fat);
-  set('scan-fiber',   p.fiber);
-  set('scan-sodium',  p.sodium);
+  setField('scan-name',    p.name);
+  setField('scan-serving', p.serving);
+  setField('scan-cal',     p.cal);
+  setField('scan-prot',    p.prot);
+  setField('scan-carbs',   p.carbs);
+  setField('scan-fat',     p.fat);
+  setField('scan-fiber',   p.fiber);
+  setField('scan-sodium',  p.sodium);
   if (p.unit) {
     var sel = document.getElementById('scan-unit');
-    for (var i = 0; i < sel.options.length; i++) {
+    for (var i=0; i<sel.options.length; i++) {
       if (sel.options[i].value === p.unit) { sel.value = p.unit; break; }
     }
   }
@@ -1920,8 +2497,7 @@ function populateFields(p) {
 function setOcrStatus(type, msg) {
   document.getElementById('ocr-status-wrap').innerHTML =
     '<div class="ocr-st ' + type + '">' +
-    (type === 'loading' ? '<div class="spin"></div>' : '') +
-    msg + '</div>';
+    (type==='loading' ? '<div class="spin"></div>' : '') + msg + '</div>';
 }
 
 function submitScan() {
@@ -1929,39 +2505,54 @@ function submitScan() {
   var cal  = Number(document.getElementById('scan-cal').value);
   if (!cal) { showToast('Enter or verify calories'); return; }
   var entry = {
-    name: name, cal: cal,
-    prot:    Number(document.getElementById('scan-prot').value)  || 0,
-    carbs:   Number(document.getElementById('scan-carbs').value) || 0,
-    fat:     Number(document.getElementById('scan-fat').value)   || 0,
-    fiber:   Number(document.getElementById('scan-fiber').value) || 0,
-    sodium:  Number(document.getElementById('scan-sodium').value)|| 0,
-    serving: document.getElementById('scan-serving').value || '',
-    unit:    document.getElementById('scan-unit').value,
-    scanned: true,
-    ts:      Date.now()
+    name:name, cal:cal,
+    prot:   Number(document.getElementById('scan-prot').value)  ||0,
+    carbs:  Number(document.getElementById('scan-carbs').value) ||0,
+    fat:    Number(document.getElementById('scan-fat').value)   ||0,
+    fiber:  Number(document.getElementById('scan-fiber').value) ||0,
+    sodium: Number(document.getElementById('scan-sodium').value)||0,
+    serving:document.getElementById('scan-serving').value||'',
+    unit:   document.getElementById('scan-unit').value,
+    scanned:true, ts:Date.now()
   };
   logEntry(document.getElementById('scan-meal').value, entry);
   closeScanSheet();
 }
 
 function resetScan() {
-  capturedB64 = null;
-  uploadedB64 = null;
-  stopCam();
-  document.getElementById('ocr-status-wrap').innerHTML        = '';
-  document.getElementById('scan-fields').style.display        = 'none';
+  capturedB64 = null; uploadedB64 = null;
+  stopCam(); stopBarcodeScanner();
+  document.getElementById('ocr-status-wrap').innerHTML    = '';
+  document.getElementById('ocr-conf-wrap').style.display  = 'none';
+  document.getElementById('scan-fields').style.display    = 'none';
+  document.getElementById('bc-product-wrap').innerHTML    = '';
+  document.getElementById('bc-status-wrap').innerHTML     = '';
+  document.getElementById('upload-preview').style.display = 'none';
+  document.getElementById('upload-zone').style.display    = 'block';
   resetAutoCalc('scan');
-  document.getElementById('upload-preview').style.display     = 'none';
-  document.getElementById('upload-zone').style.display        = 'block';
-  setScanMode('camera');
+  var finput = document.querySelector('#upload-zone input[type=file]');
+  if (finput) finput.value = '';
+  setScanMode('barcode');
 }
 
-function setScanMode(mode) {
-  document.getElementById('scan-cam-area').style.display    = mode === 'camera' ? 'block' : 'none';
-  document.getElementById('scan-upload-area').style.display = mode === 'upload' ? 'block' : 'none';
-  document.getElementById('smode-cam').className    = mode === 'camera' ? 'chip chip-filled' : 'chip chip-out';
-  document.getElementById('smode-upload').className = mode === 'upload' ? 'chip chip-filled' : 'chip chip-out';
-  if (mode === 'upload' && camStream) stopCam();
+function openScanSheet() {
+  resetScan();
+  document.getElementById('sh-scan').classList.add('open');
+  document.getElementById('sc-scan').classList.add('open');
+  document.getElementById('nav-scan').classList.add('active');
+}
+
+function closeScanSheet() {
+  stopCam(); stopBarcodeScanner();
+  document.getElementById('sh-scan').classList.remove('open');
+  document.getElementById('sc-scan').classList.remove('open');
+  document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('nav-today').classList.add('active');
+  // Terminate OCR worker to free memory
+  if (ocrWorker) {
+    ocrWorker.terminate().catch(function(){});
+    ocrWorker = null;
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -1973,37 +2564,84 @@ function syncAuto() {
   }
 }
 async function syncNow() {
-  if (!SUPABASE_URL || !SUPABASE_KEY) { showToast('Supabase not configured'); return; }
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    showToast('Add Supabase URL and key at top of file');
+    return;
+  }
   var s    = getState();
   var rows = [];
   var days = s.days || {};
   Object.keys(days).forEach(function(date) {
     var day = days[date];
+    if (!day || !day.meals) return;
     MEALS.forEach(function(meal) {
       (day.meals[meal] || []).forEach(function(item) {
-        var row = {date:date, meal:meal};
-        Object.keys(item).forEach(function(k) { row[k] = item[k]; });
+        // stable row id = ts (unique per entry), plus all fields
+        var row = {
+          id:     String(item.ts || Date.now()),
+          date:   date,
+          meal:   meal,
+          name:   item.name    || '',
+          cal:    item.cal     || 0,
+          prot:   item.prot    || 0,
+          carbs:  item.carbs   || 0,
+          fat:    item.fat     || 0,
+          fiber:  item.fiber   || 0,
+          sugar:  item.sugar   || 0,
+          sodium: item.sodium  || 0,
+          serving:item.serving || '',
+          unit:   item.unit    || 'g',
+          scanned:item.scanned ? true : false,
+          ts:     item.ts      || 0
+        };
         rows.push(row);
       });
     });
   });
-  if (!rows.length) { showToast('Nothing to sync'); return; }
+  if (!rows.length) { showToast('Nothing to sync yet'); return; }
+  
+  var el = document.getElementById('sync-status');
+  if (el) el.textContent = 'Syncing ' + rows.length + ' entries…';
+  
   try {
+    // Supabase upsert: POST with Prefer: resolution=merge-duplicates
+    // Requires table to have primary key "id" (text)
     var res = await fetch(SUPABASE_URL + '/rest/v1/' + SUPABASE_TABLE, {
       method: 'POST',
       headers: {
         'Content-Type':  'application/json',
         'apikey':        SUPABASE_KEY,
         'Authorization': 'Bearer ' + SUPABASE_KEY,
-        'Prefer':        'resolution=merge-duplicates'
+        'Prefer':        'return=minimal,resolution=merge-duplicates'
       },
       body: JSON.stringify(rows)
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    showToast('Synced ✓');
-    document.getElementById('sync-status').textContent = 'Last synced: ' + new Date().toLocaleTimeString();
+    
+    if (res.status === 401) throw new Error('Invalid API key');
+    if (res.status === 404) throw new Error('Table "' + SUPABASE_TABLE + '" not found — create it first');
+    if (res.status === 409) {
+      // conflict — table may lack unique constraint on id, try without merge
+      var res2 = await fetch(SUPABASE_URL + '/rest/v1/' + SUPABASE_TABLE, {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'apikey':        SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Prefer':        'return=minimal'
+        },
+        body: JSON.stringify(rows)
+      });
+      if (!res2.ok) throw new Error('HTTP ' + res2.status + ' — check table has id as primary key');
+    } else if (!res.ok) {
+      var errText = await res.text().catch(function(){return '';});
+      throw new Error('HTTP ' + res.status + (errText ? ': ' + errText.slice(0,100) : ''));
+    }
+    
+    showToast('Synced ' + rows.length + ' entries ✓');
+    if (el) el.textContent = 'Last synced: ' + new Date().toLocaleString() + ' (' + rows.length + ' entries)';
   } catch(e) {
-    showToast('Sync failed: ' + e.message);
+    showToast('Sync error: ' + e.message);
+    if (el) el.textContent = 'Error: ' + e.message;
   }
 }
 
@@ -2021,19 +2659,6 @@ function closeSheet(id) {
   var scrimId = 'sc-' + id.replace('sh-','');
   document.getElementById(id).classList.remove('open');
   document.getElementById(scrimId).classList.remove('open');
-}
-function openScanSheet() {
-  resetScan();
-  document.getElementById('sh-scan').classList.add('open');
-  document.getElementById('sc-scan').classList.add('open');
-  document.getElementById('nav-scan').classList.add('active');
-}
-function closeScanSheet() {
-  stopCam();
-  document.getElementById('sh-scan').classList.remove('open');
-  document.getElementById('sc-scan').classList.remove('open');
-  document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
-  document.getElementById('nav-today').classList.add('active');
 }
 function goPage(name) {
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
@@ -2092,8 +2717,8 @@ var currentView = 'daily';
 
 function setView(v) {
   currentView = v;
-  document.getElementById('view-daily').style.display  = v === 'daily'  ? 'block' : 'none';
-  document.getElementById('view-weekly').style.display = v === 'weekly' ? 'block' : 'none';
+  document.getElementById('view-daily').style.display  = v === 'daily'  ? 'flex' : 'none';
+  document.getElementById('view-weekly').style.display = v === 'weekly' ? 'flex' : 'none';
   document.getElementById('vt-daily').classList.toggle('active',  v === 'daily');
   document.getElementById('vt-weekly').classList.toggle('active', v === 'weekly');
   if (v === 'weekly') renderWeekly();
