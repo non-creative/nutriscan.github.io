@@ -2180,16 +2180,24 @@ function setScanMode(mode) {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-//  BARCODE SCANNER  —  ZXing v0.20 (stable mobile API)
+//  BARCODE SCANNER  —  ZXing v0.20
+//  Key rules:
+//  - Always create a NEW bcReader instance on each scan start
+//  - bcReader.reset() fully releases camera on stop
+//  - bcActive guard prevents double-fire from ZXing callback
 // ══════════════════════════════════════════════════════════════════════
 async function startBarcodeScanner() {
   var statusEl = document.getElementById('bc-status-wrap');
+
   if (typeof ZXing === 'undefined') {
-    statusEl.innerHTML = '<div class="ocr-st err">ZXing library not loaded. Check internet connection and reload the page.</div>';
+    statusEl.innerHTML = '<div class="ocr-st err">ZXing not loaded — check your internet connection and reload.</div>';
     return;
   }
 
-  // Show scanning UI immediately
+  // Full cleanup before starting — ensure no stale reader/stream
+  stopBarcode();
+
+  // Update UI
   document.getElementById('vf-bc-ph').style.display      = 'none';
   document.getElementById('vf-bc-overlay').style.display = 'flex';
   document.getElementById('vf-bc-hint').style.display    = 'block';
@@ -2198,84 +2206,90 @@ async function startBarcodeScanner() {
   document.getElementById('bc-product-wrap').innerHTML   = '';
   statusEl.innerHTML = '<div class="ocr-st loading"><div class="spin"></div>Starting camera…</div>';
 
-  bcActive = true;
+  // Always create a FRESH reader — never reuse after reset()
   bcReader = new ZXing.BrowserMultiFormatReader();
+  bcActive = true;
 
   try {
-    // listVideoInputDevices to find rear camera
+    // Enumerate cameras to find rear-facing
     var devices = [];
-    try { devices = await bcReader.listVideoInputDevices(); } catch(e) {}
+    try { devices = await ZXing.BrowserMultiFormatReader.listVideoInputDevices(); } catch(e1) {
+      try { devices = await bcReader.listVideoInputDevices(); } catch(e2) {}
+    }
 
-    // Prefer rear/environment camera
-    var deviceId = null;
-    for (var di=0; di<devices.length; di++) {
-      var label = (devices[di].label || '').toLowerCase();
-      if (label.indexOf('back') !== -1 || label.indexOf('rear') !== -1 ||
-          label.indexOf('environment') !== -1 || label.indexOf('camera 0') !== -1) {
+    var deviceId = undefined; // undefined = ZXing picks default
+    for (var di = 0; di < devices.length; di++) {
+      var lbl = (devices[di].label || '').toLowerCase();
+      if (lbl.indexOf('back') !== -1 || lbl.indexOf('rear') !== -1 ||
+          lbl.indexOf('environment') !== -1 || lbl.indexOf('camera 0') !== -1) {
         deviceId = devices[di].deviceId;
         break;
       }
     }
-    // Fallback: use last device (usually rear on mobile)
-    if (!deviceId && devices.length > 0) {
+    if (deviceId === undefined && devices.length > 0) {
       deviceId = devices[devices.length - 1].deviceId;
     }
 
-    statusEl.innerHTML = '<div class="ocr-st loading"><div class="spin"></div>Aim at the barcode on the package</div>';
-
-    // decodeFromVideoDevice: ZXing manages the video element entirely
     var vid = document.getElementById('bc-video');
     vid.style.display = 'block';
+    statusEl.innerHTML = '<div class="ocr-st loading"><div class="spin"></div>Aim at the barcode on the package</div>';
 
+    // decodeFromVideoDevice — ZXing owns camera lifecycle
     await bcReader.decodeFromVideoDevice(deviceId, 'bc-video', function(result, err) {
       if (!bcActive) return;
       if (result) {
-        var code = result.getText();
         bcActive = false;
-        if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
-        // Capture the stream reference before stopping
-        if (vid.srcObject) { bcStream = vid.srcObject; }
+        var code = result.getText();
+        if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
         stopBarcode();
         fetchProduct(code);
       }
-      // err = NotFoundException on empty frames — normal, ignore
+      // err = NotFoundException every empty frame — completely normal, ignore
     });
 
   } catch(e) {
-    var msg = e.message || String(e);
-    if (msg.indexOf('Permission') !== -1 || msg.indexOf('denied') !== -1 || msg.indexOf('NotAllowed') !== -1) {
-      statusEl.innerHTML = '<div class="ocr-st err">Camera access denied. Please allow camera in browser settings.</div>';
-    } else {
-      statusEl.innerHTML = '<div class="ocr-st err">Scanner error: ' + esc(msg) + '</div>';
-    }
+    bcActive = false;
     stopBarcode();
+    var msg = e.message || String(e);
+    if (/permission|denied|notallowed/i.test(msg)) {
+      statusEl.innerHTML = '<div class="ocr-st err">Camera access denied. Please allow camera access in your browser settings.</div>';
+    } else {
+      statusEl.innerHTML = '<div class="ocr-st err">Could not start scanner: ' + esc(msg) + '</div>';
+    }
   }
 }
 
 function stopBarcode() {
   bcActive = false;
-  // bcReader.reset() stops decoding AND releases the camera
+  // reset() stops the decode loop AND releases the camera track
   if (bcReader) {
     try { bcReader.reset(); } catch(e) {}
     bcReader = null;
   }
-  // Also stop any stream we captured
+  // Belt-and-suspenders: stop any stream on the video element
+  var vid = document.getElementById('bc-video');
+  if (vid) {
+    try {
+      if (vid.srcObject) {
+        vid.srcObject.getTracks().forEach(function(t) { try { t.stop(); } catch(e) {} });
+        vid.srcObject = null;
+      }
+      vid.pause();
+    } catch(e) {}
+    vid.style.display = 'none';
+  }
+  // Stop module-level bcStream reference if set
   if (bcStream) {
     try { bcStream.getTracks().forEach(function(t){ t.stop(); }); } catch(e) {}
     bcStream = null;
   }
   torchOnBC = false;
-  var vid = document.getElementById('bc-video');
-  if (vid) {
-    try { vid.pause(); } catch(e) {}
-    try { if (vid.srcObject) { vid.srcObject.getTracks().forEach(function(t){ t.stop(); }); vid.srcObject = null; } } catch(e) {}
-    vid.style.display = 'none';
-  }
   var els = {
-    'vf-bc-ph':'flex','bc-start':'flex',
-    'vf-bc-overlay':'none','vf-bc-hint':'none','torch-btn-bc':'none','bc-stop':'none'
+    'vf-bc-ph':'flex', 'bc-start':'flex',
+    'vf-bc-overlay':'none', 'vf-bc-hint':'none',
+    'torch-btn-bc':'none', 'bc-stop':'none'
   };
-  Object.keys(els).forEach(function(id){
+  Object.keys(els).forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = els[id];
   });
@@ -2283,58 +2297,120 @@ function stopBarcode() {
 function stopBarcodeScanner() { stopBarcode(); } // alias
 
 async function toggleTorchBC() {
-  if (!bcStream) return;
+  var vid = document.getElementById('bc-video');
+  if (!vid || !vid.srcObject) return;
   torchOnBC = !torchOnBC;
   try {
-    await bcStream.getVideoTracks()[0].applyConstraints({advanced:[{torch:torchOnBC}]});
-    document.getElementById('torch-btn-bc').style.background = torchOnBC ? 'rgba(255,220,0,.4)' : 'rgba(0,0,0,.4)';
+    var track = vid.srcObject.getVideoTracks()[0];
+    if (track) await track.applyConstraints({advanced:[{torch:torchOnBC}]});
+    var tb = document.getElementById('torch-btn-bc');
+    if (tb) tb.style.background = torchOnBC ? 'rgba(255,220,0,.4)' : 'rgba(0,0,0,.4)';
   } catch(e) { torchOnBC = false; }
 }
 
-// ── Open Food Facts lookup ────────────────────────────────────────────
+// ── Open Food Facts product lookup ────────────────────────────────────
+// Handles: product not found, network errors, timeout, missing fields
 async function fetchProduct(barcode) {
   var statusEl = document.getElementById('bc-status-wrap');
-  statusEl.innerHTML = '<div class="ocr-st loading"><div class="spin"></div>Looking up ' + esc(barcode) + '…</div>';
+  if (!statusEl) return;
+  statusEl.innerHTML = '<div class="ocr-st loading"><div class="spin"></div>Looking up barcode ' + esc(barcode) + '…</div>';
+
+  // Build URL — v2 API with all needed fields
+  var url = 'https://world.openfoodfacts.org/api/v2/product/' +
+    encodeURIComponent(barcode) +
+    '.json?fields=product_name,product_name_en,brands,nutriments,serving_size,serving_quantity,serving_quantity_unit';
+
   try {
-    var res = await fetch('https://world.openfoodfacts.org/api/v2/product/' + barcode +
-      '.json?fields=product_name,brands,nutriments,serving_size,serving_quantity');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var data = await res.json();
-    if (!data || data.status === 0 || !data.product) {
-      statusEl.innerHTML = '<div class="ocr-st err">Product not found in Open Food Facts database for barcode: ' + esc(barcode) + '. Try the label scanner instead.</div>';
+    // Timeout after 10 seconds
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timeoutId  = controller ? setTimeout(function(){ controller.abort(); }, 10000) : null;
+    var fetchOpts  = controller ? { signal: controller.signal } : {};
+
+    var res = await fetch(url, fetchOpts);
+    if (timeoutId) clearTimeout(timeoutId);
+
+    // 404 = product not in OFF database (not an error we should crash on)
+    if (res.status === 404 || res.status === 301) {
+      statusEl.innerHTML =
+        '<div class="ocr-st err">' +
+          'Barcode <strong>' + esc(barcode) + '</strong> not found in Open Food Facts. ' +
+          'Switch to <strong>Nutrition Label</strong> tab and scan the label instead.' +
+        '</div>';
+      // Show the scan fields empty so user can still log manually
+      document.getElementById('scan-fields').style.display = 'block';
+      setF('scan-name', 'Product ' + barcode);
       return;
     }
-    var p   = data.product;
-    var n   = p.nutriments || {};
-    var nm  = (p.product_name || 'Unknown product').trim();
-    var br  = (p.brands || '').trim();
-    var sv  = parseFloat(p.serving_quantity) || parseFloat(p.serving_size) || 100;
-    var sc  = sv / 100;
 
-    // nutriments are per 100g in OFF API
-    var cal   = rnd((n['energy-kcal_100g'] || 0) * sc);
-    var prot  = rnd((n['proteins_100g']     || 0) * sc);
-    var carbs = rnd((n['carbohydrates_100g']|| 0) * sc);
-    var fat   = rnd((n['fat_100g']          || 0) * sc);
-    var fiber = rnd((n['fiber_100g']         || 0) * sc);
-    var sod   = rnd((n['sodium_100g']        || 0) * sc * 1000);
+    if (!res.ok) {
+      throw new Error('Server returned ' + res.status + ' — try again in a moment.');
+    }
 
-    statusEl.innerHTML = '<div class="ocr-st ok">✓ Found: ' + esc(nm) + (br ? ' · ' + esc(br) : '') + '</div>';
+    var data = await res.json();
+
+    if (!data || data.status === 0 || !data.product) {
+      statusEl.innerHTML =
+        '<div class="ocr-st err">' +
+          'Barcode <strong>' + esc(barcode) + '</strong> is not in Open Food Facts yet. ' +
+          'Scan the nutrition label or enter values manually.' +
+        '</div>';
+      document.getElementById('scan-fields').style.display = 'block';
+      setF('scan-name', 'Product ' + barcode);
+      return;
+    }
+
+    var p  = data.product;
+    var nm = p.nutriments || {};
+
+    // Product name — try localised then generic
+    var name  = (p.product_name_en || p.product_name || '').trim() || ('Product ' + barcode);
+    var brand = (p.brands || '').split(',')[0].trim();
+
+    // Serving size — try numeric field first, then parse string field
+    var sv = parseFloat(p.serving_quantity) || 0;
+    if (!sv && p.serving_size) {
+      var sm = String(p.serving_size).match(/(\d[\d.,]*)/);
+      if (sm) sv = parseFloat(sm[1].replace(',','.'));
+    }
+    if (!sv || sv <= 0) sv = 100; // default to 100g
+
+    var scale = sv / 100;
+
+    // Energy — prefer kcal field, fall back to kJ ÷ 4.184
+    var calPer100 = nm['energy-kcal_100g'] || nm['energy-kcal'] || 0;
+    if (!calPer100 && (nm['energy_100g'] || nm['energy'])) {
+      calPer100 = (nm['energy_100g'] || nm['energy'] || 0) / 4.184;
+    }
+
+    // All values scaled to serving
+    var cal   = rnd(calPer100 * scale);
+    var prot  = rnd((nm['proteins_100g']      || nm['proteins']      || 0) * scale);
+    var carbs = rnd((nm['carbohydrates_100g']  || nm['carbohydrates'] || 0) * scale);
+    var fat   = rnd((nm['fat_100g']            || nm['fat']           || 0) * scale);
+    var fiber = rnd((nm['fiber_100g']          || nm['fiber']         || nm['fibers_100g'] || 0) * scale);
+    var sod   = rnd((nm['sodium_100g']         || nm['sodium']        || 0) * scale * 1000);
+
+    // Show success status
+    statusEl.innerHTML =
+      '<div class="ocr-st ok">✓ Found: <strong>' + esc(name) + '</strong>' +
+      (brand ? ' · ' + esc(brand) : '') + '</div>';
+
+    // Product card
     document.getElementById('bc-product-wrap').innerHTML =
       '<div class="product-card">' +
-        '<div class="pc-name">' + esc(nm) + '</div>' +
-        (br ? '<div class="pc-brand">' + esc(br) + '</div>' : '') +
+        '<div class="pc-name">'  + esc(name)  + '</div>' +
+        (brand ? '<div class="pc-brand">' + esc(brand) + '</div>' : '') +
         '<div class="pc-macros">' +
-          '<div class="pc-macro" style="color:var(--accent-cal)">' + cal + ' kcal</div>' +
-          '<div class="pc-macro" style="color:var(--accent-prot)">P ' + prot + 'g</div>' +
-          '<div class="pc-macro" style="color:var(--accent-carb)">C ' + carbs + 'g</div>' +
-          '<div class="pc-macro" style="color:var(--accent-fat)">F ' + fat + 'g</div>' +
+          '<div class="pc-macro" style="color:var(--accent-cal)">'  + cal   + ' kcal</div>' +
+          '<div class="pc-macro" style="color:var(--accent-prot)">P ' + prot  + 'g</div>'   +
+          '<div class="pc-macro" style="color:var(--accent-carb)">C ' + carbs + 'g</div>'   +
+          '<div class="pc-macro" style="color:var(--accent-fat)">F '  + fat   + 'g</div>'   +
         '</div>' +
       '</div>';
 
-    // Populate editable fields
+    // Populate scan fields (reference values = per serving from label)
     resetAutoCalc('scan');
-    setF('scan-name',       nm);
+    setF('scan-name',       name);
     setF('scan-serving',    sv);
     setF('scan-cal',        cal);
     setF('scan-prot',       prot);
@@ -2344,12 +2420,17 @@ async function fetchProduct(barcode) {
     setF('scan-sodium',     sod);
     setF('scan-my-serving', sv);
     document.getElementById('scan-portions').value = '1';
-    document.getElementById('scan-unit').value     = 'g';
+    document.getElementById('scan-unit').value     = p.serving_quantity_unit === 'ml' ? 'ml' : 'g';
     scalePortions('scan');
     document.getElementById('scan-fields').style.display = 'block';
 
   } catch(e) {
-    statusEl.innerHTML = '<div class="ocr-st err">Lookup failed: ' + esc(e.message) + '</div>';
+    var msg = e.message || String(e);
+    if (msg.indexOf('abort') !== -1 || msg.indexOf('AbortError') !== -1) {
+      statusEl.innerHTML = '<div class="ocr-st err">Lookup timed out. Check your internet connection and try again.</div>';
+    } else {
+      statusEl.innerHTML = '<div class="ocr-st err">Lookup failed: ' + esc(msg) + ' — try the label scanner or enter manually.</div>';
+    }
   }
 }
 function rnd(v)    { return Math.round((+v||0)*10)/10; }
