@@ -654,6 +654,82 @@ body{
 
 
 /* OCR/barcode status */
+.viewfinder{
+  position:relative;
+  height:min(52dvh,360px);
+  min-height:260px;
+  overflow:hidden;
+  border-radius:var(--r-l);
+  background:#10131d;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);
+}
+.vf-ph{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:10px;color:rgba(255,255,255,.72);
+  font-size:14px;font-weight:600;
+}
+.vf-overlay{
+  position:absolute;inset:0;
+  align-items:center;justify-content:center;
+  pointer-events:none;
+  background:linear-gradient(to bottom,rgba(0,0,0,.25),rgba(0,0,0,.02) 35%,rgba(0,0,0,.02) 65%,rgba(0,0,0,.25));
+}
+.vf-barcode-frame{
+  position:relative;
+  width:min(86%,360px);
+  height:118px;
+  border:2px solid rgba(255,255,255,.9);
+  border-radius:12px;
+  box-shadow:0 0 0 999px rgba(0,0,0,.18);
+  overflow:hidden;
+}
+.vf-barcode-frame::before,
+.vf-barcode-frame::after{
+  content:"";
+  position:absolute;top:0;bottom:0;width:24px;
+  border-top:4px solid var(--primary);
+  border-bottom:4px solid var(--primary);
+}
+.vf-barcode-frame::before{left:0;border-left:4px solid var(--primary);}
+.vf-barcode-frame::after{right:0;border-right:4px solid var(--primary);}
+.vf-barcode-line{
+  position:absolute;left:10px;right:10px;top:50%;
+  height:2px;background:var(--accent-cal);
+  box-shadow:0 0 14px rgba(232,68,27,.9);
+  animation:bcscan 1.45s var(--ease) infinite alternate;
+}
+@keyframes bcscan{from{transform:translateY(-42px)}to{transform:translateY(42px)}}
+.vf-hint{
+  position:absolute;left:50%;bottom:12px;
+  transform:translateX(-50%);
+  max-width:calc(100% - 28px);
+  padding:8px 12px;border-radius:var(--pill);
+  background:rgba(0,0,0,.48);color:#fff;
+  font-size:12px;font-weight:700;text-align:center;
+  backdrop-filter:blur(5px);
+}
+.cam-btns{display:flex;gap:10px;margin:12px 0 0;}
+.cam-main,.cam-sec{
+  min-height:46px;border:0;border-radius:var(--pill);
+  padding:0 18px;
+  font-family:inherit;font-size:14px;font-weight:700;
+  line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  gap:8px;cursor:pointer;transition:transform .1s,box-shadow .15s,background .12s;
+  -webkit-appearance:none;appearance:none;
+  text-decoration:none;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+.cam-main{flex:1 1 auto;background:var(--primary);color:var(--on-primary);box-shadow:var(--sh1);}
+.cam-main:hover{box-shadow:var(--sh2);}
+.cam-main:active,.cam-sec:active{transform:scale(.98);}
+.cam-sec{width:auto;min-width:96px;background:var(--surf2);color:var(--on-surf2);box-shadow:inset 0 0 0 1px var(--outline);}
+.cam-sec:hover{background:var(--surf3);}
+.cam-main svg,.cam-sec svg{width:16px;height:16px;flex-shrink:0;}
+
 .ocr-st{
   border-radius:var(--r);padding:11px 14px;
   font-size:13px;font-weight:500;
@@ -820,40 +896,6 @@ body{
 }
 .edit-btn svg { width:15px;height:15px; }
 .edit-btn:hover { background:var(--prim-cont2);color:var(--primary); }
-/* recipe card */
-.recipe-card {
-  background:var(--surface);border-radius:var(--r-l);
-  padding:13px 16px;margin-bottom:8px;
-  box-shadow:var(--sh1);
-}
-.recipe-card-name { font-size:14px;font-weight:600;color:var(--on-surf); }
-.recipe-card-macros { font-size:12px;color:var(--on-surf3);margin-top:3px; }
-.recipe-card-actions { display:flex;gap:6px;margin-top:10px; }
-.recipe-ingr { padding:8px 0;border-bottom:1px solid var(--outline2);font-size:13px;display:flex;align-items:center;gap:8px; }
-.recipe-ingr:last-child { border-bottom:none; }
-.recipe-ingr-name { flex:1;color:var(--on-surf); }
-.recipe-ingr-val { color:var(--on-surf3);font-size:12px;white-space:nowrap; }
-
-
-/* ── library/recipe tabs ── */
-.lib-tabs {
-  display:flex; background:var(--surf2); border-radius:var(--pill);
-  padding:3px; gap:2px; margin-bottom:16px; flex-shrink:0;
-}
-.lib-tab {
-  flex:1; padding:8px 0; text-align:center;
-  font-size:12px; font-weight:700; font-family:inherit;
-  border:none; background:none; color:var(--on-surf2);
-  border-radius:var(--pill); cursor:pointer;
-  transition:background .15s,color .15s,box-shadow .15s;
-  text-transform:uppercase; letter-spacing:.3px;
-}
-.lib-tab.active {
-  background:var(--surface); color:var(--primary); box-shadow:var(--sh1);
-}
-.lib-tab-pane { display:none; flex:1; overflow-y:auto; min-height:0; }
-.lib-tab-pane.active { display:flex; flex-direction:column; }
-
 </style>
 </head>
 <body>
@@ -1376,37 +1418,16 @@ const SUPABASE_FOODS = 'nutriscan_foods';
     <button class="ib" onclick="closeSheet('sh-library')"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
   </div>
   <div class="sheet-body" style="display:flex;flex-direction:column;overflow:hidden;padding-bottom:0">
-    <!-- Tabs -->
-    <div class="lib-tabs" style="flex-shrink:0">
-      <button class="lib-tab active" id="lt-foods"   onclick="switchLibTab('foods')">Foods</button>
-      <button class="lib-tab"        id="lt-recipes" onclick="switchLibTab('recipes')">Recipes</button>
+    <div class="food-search-wrap" style="margin-bottom:12px;flex-shrink:0">
+      <div class="food-search-icon"><svg viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
+      <input class="food-search" id="lib-filter" type="text" placeholder="Search foods…" oninput="renderLibrary(this.value)">
     </div>
-
-    <!-- FOODS TAB -->
-    <div class="lib-tab-pane active" id="ltp-foods">
-      <div class="food-search-wrap" style="margin-bottom:12px;flex-shrink:0">
-        <div class="food-search-icon"><svg viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
-        <input class="food-search" id="lib-filter" type="text" placeholder="Search foods…" oninput="renderLibrary(this.value)">
-      </div>
-      <div id="lib-list" style="flex:1;overflow-y:auto;padding-bottom:16px"></div>
-      <div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--outline2);display:flex;gap:8px;padding-bottom:20px">
-        <button class="btn-s" style="flex:1;margin-top:0" onclick="syncLibrary()">Sync to cloud</button>
-        <button class="btn-s" style="flex:1;margin-top:0" onclick="importLibraryFromSupabase()">Pull from cloud</button>
-      </div>
-      <div id="lib-sync-status" style="font-size:12px;color:var(--on-surf3);text-align:center;margin-top:4px;margin-bottom:12px"></div>
+    <div id="lib-list" style="flex:1;overflow-y:auto;padding-bottom:16px"></div>
+    <div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--outline2);display:flex;gap:8px;padding-bottom:20px">
+      <button class="btn-s" style="flex:1;margin-top:0" onclick="syncLibrary()">Sync to cloud</button>
+      <button class="btn-s" style="flex:1;margin-top:0" onclick="importLibraryFromSupabase()">Pull from cloud</button>
     </div>
-
-    <!-- RECIPES TAB -->
-    <div class="lib-tab-pane" id="ltp-recipes">
-      <div style="flex-shrink:0;margin-bottom:12px">
-        <button class="btn-p" style="margin-top:0;width:100%" onclick="openNewRecipe()">+ New recipe</button>
-      </div>
-      <div class="food-search-wrap" style="margin-bottom:12px;flex-shrink:0">
-        <div class="food-search-icon"><svg viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
-        <input class="food-search" id="recipe-filter" type="text" placeholder="Search recipes…" oninput="renderRecipes(this.value)">
-      </div>
-      <div id="recipe-list" style="flex:1;overflow-y:auto;padding-bottom:20px"></div>
-    </div>
+    <div id="lib-sync-status" style="font-size:12px;color:var(--on-surf3);text-align:center;margin-top:4px;margin-bottom:12px"></div>
   </div>
 </div>
 
@@ -1480,44 +1501,6 @@ const SUPABASE_FOODS = 'nutriscan_foods';
     </div>
     <button class="btn-p" onclick="saveEditedEntry()">Save changes</button>
     <button class="btn-d" onclick="deleteEditedEntry()">🗑 Remove this entry from today's log</button>
-  </div>
-</div>
-
-<!-- recipes tab is inside sh-library -->
-
-<!-- ══ SHEET: NEW / EDIT RECIPE ══ -->
-<div class="scrim" id="sc-newrecipe" onclick="closeSheet('sh-newrecipe')"></div>
-<div class="sheet" id="sh-newrecipe">
-  <div class="sheet-handle"></div>
-  <div class="sheet-hdr">
-    <span class="sheet-title" id="recipe-sheet-title">New recipe</span>
-    <button class="ib" onclick="closeSheet('sh-newrecipe')"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
-  </div>
-  <div class="sheet-body">
-    <input type="hidden" id="recipe-edit-id">
-    <div class="field"><label class="flabel">Recipe name</label><input class="finput" id="recipe-name" type="text" placeholder="e.g. Post-workout shake"></div>
-    <div class="fsec">Ingredients</div>
-    <!-- Search library for ingredients -->
-    <div class="food-search-wrap" style="margin-bottom:12px">
-      <div class="food-search-icon"><svg viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
-      <input class="food-search" id="recipe-ingr-search" type="text" placeholder="Search food library to add ingredient…"
-        oninput="searchRecipeIngr(this.value)" autocomplete="off">
-      <div class="food-results" id="recipe-ingr-results"></div>
-    </div>
-    <!-- Ingredients list -->
-    <div id="recipe-ingr-list" style="margin-bottom:14px"></div>
-    <!-- Totals preview -->
-    <div id="recipe-totals" style="display:none;background:var(--surf2);border-radius:var(--r);padding:12px 14px;margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--on-surf3);margin-bottom:8px">Total nutrition</div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--accent-cal)" id="rt-cal">0</div><div style="font-size:10px;color:var(--on-surf3);font-weight:600;text-transform:uppercase">kcal</div></div>
-        <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--accent-prot)" id="rt-prot">0</div><div style="font-size:10px;color:var(--on-surf3);font-weight:600;text-transform:uppercase">prot</div></div>
-        <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--accent-carb)" id="rt-carb">0</div><div style="font-size:10px;color:var(--on-surf3);font-weight:600;text-transform:uppercase">carbs</div></div>
-        <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--accent-fat)" id="rt-fat">0</div><div style="font-size:10px;color:var(--on-surf3);font-weight:600;text-transform:uppercase">fat</div></div>
-      </div>
-    </div>
-    <button class="btn-p" onclick="saveRecipe()">Save recipe</button>
-    <button class="btn-d" id="recipe-delete-btn" onclick="deleteRecipe()" style="display:none">Delete recipe</button>
   </div>
 </div>
 
@@ -1874,8 +1857,7 @@ function renderToday() {
           'C '  + (Math.round((Number(it.carbs)||0)*10)/10) + 'g · ' +
           'F '  + (Math.round((Number(it.fat)||0)*10)/10)   + 'g' +
           (it.serving ? ' · ' + it.serving + (it.unit||'g') : '') +
-          (it.scanned    ? ' · 📷' : '') +
-          (it.fromRecipe ? ' · 🍽' : '');
+          (it.scanned    ? ' · 📷' : '');
         row.innerHTML =
           '<div class="food-info">' +
             '<div class="food-name">'   + esc(it.name)  + '</div>' +
@@ -2307,6 +2289,8 @@ var uploadedB64  = null;
 var scanMode     = 'barcode';
 var bcReader     = null;
 var bcActive     = false;
+var lastBarcode  = '';
+var lastBarcodeTs = 0;
 // Auto-capture state — counts stable sharp frames
 // Auto-capture fires after this many consecutive stable high-edge frames
 // Each rAF ~60fps → 40 frames = ~0.67s of stability required
@@ -2364,16 +2348,32 @@ async function startBarcodeScanner() {
   // the stream to it, and must STAY visible for the entire scan duration.
   var vid = document.getElementById('bc-video');
   vid.style.display = 'block';
+  vid.onloadedmetadata = function(){ setTimeout(updateBarcodeCameraControls, 150); };
   document.getElementById('vf-bc-ph').style.display      = 'none';
   document.getElementById('vf-bc-overlay').style.display = 'flex';
   document.getElementById('vf-bc-hint').style.display    = 'block';
   document.getElementById('bc-start').style.display      = 'none';
-  document.getElementById('bc-stop').style.display       = 'block';
+  document.getElementById('bc-stop').style.display       = 'flex';
   document.getElementById('bc-product-wrap').innerHTML   = '';
   statusEl.innerHTML = '<div class="ocr-st loading"><div class="spin"></div>Starting camera…</div>';
 
-  // Always create a FRESH reader — never reuse after reset()
-  bcReader = new ZXing.BrowserMultiFormatReader();
+  // Always create a FRESH reader — never reuse after reset().
+  // Limit formats to retail barcodes for faster, more stable detection.
+  var hints = null;
+  try {
+    hints = new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+      ZXing.BarcodeFormat.EAN_13,
+      ZXing.BarcodeFormat.EAN_8,
+      ZXing.BarcodeFormat.UPC_A,
+      ZXing.BarcodeFormat.UPC_E,
+      ZXing.BarcodeFormat.CODE_128,
+      ZXing.BarcodeFormat.CODE_39,
+      ZXing.BarcodeFormat.ITF
+    ].filter(Boolean));
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+  } catch(eh) { hints = null; }
+  bcReader = new ZXing.BrowserMultiFormatReader(hints, 180);
   bcActive = true;
 
   try {
@@ -2396,20 +2396,48 @@ async function startBarcodeScanner() {
       deviceId = devices[devices.length - 1].deviceId;
     }
 
-    statusEl.innerHTML = '<div class="ocr-st loading"><div class="spin"></div>Aim at the barcode on the package — hold steady</div>';
+    statusEl.innerHTML = '<div class="ocr-st loading"><div class="spin"></div>Aim at the barcode. Fill the frame, keep it flat, and use good light.</div>';
 
-    // decodeFromVideoDevice — ZXing owns camera lifecycle
-    await bcReader.decodeFromVideoDevice(deviceId, 'bc-video', function(result, err) {
+    var onDetected = function(result, err) {
       if (!bcActive) return;
       if (result) {
+        var raw = result.getText ? result.getText() : String(result);
+        var code = normalizeBarcode(raw);
+        if (!isLikelyRetailBarcode(code)) {
+          statusEl.innerHTML = '<div class="ocr-st loading"><div class="spin"></div>Detected ' + esc(raw) + ', waiting for a valid EAN/UPC barcode…</div>';
+          return;
+        }
+        var now = Date.now();
+        if (code === lastBarcode && now - lastBarcodeTs < 1200) return;
+        lastBarcode = code;
+        lastBarcodeTs = now;
         bcActive = false;
-        var code = result.getText();
         if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
         stopBarcode();
         fetchProduct(code);
       }
       // err = NotFoundException every empty frame — completely normal, ignore
-    });
+    };
+
+    // Prefer browser camera constraints: rear camera, continuous focus, 720p.
+    // Fall back to ZXing's device picker when a browser does not support it.
+    if (bcReader.decodeFromConstraints) {
+      try {
+        await bcReader.decodeFromConstraints({
+          audio: false,
+          video: {
+            facingMode: {ideal:'environment'},
+            width: {ideal:1280},
+            height:{ideal:720},
+            focusMode: {ideal:'continuous'}
+          }
+        }, 'bc-video', onDetected);
+      } catch(ec) {
+        await bcReader.decodeFromVideoDevice(deviceId, 'bc-video', onDetected);
+      }
+    } else {
+      await bcReader.decodeFromVideoDevice(deviceId, 'bc-video', onDetected);
+    }
 
   } catch(e) {
     bcActive = false;
@@ -2421,6 +2449,48 @@ async function startBarcodeScanner() {
       statusEl.innerHTML = '<div class="ocr-st err">Could not start scanner: ' + esc(msg) + '</div>';
     }
   }
+}
+
+function normalizeBarcode(value) {
+  var code = String(value || '').replace(/[^\d]/g, '');
+  // ZXing may return UPC-A as EAN-13 with a leading zero; OFF accepts both,
+  // but the original UPC is a useful fallback in lookup.
+  return code;
+}
+
+function eanChecksumOk(code) {
+  code = String(code || '');
+  if (!/^\d{8}$|^\d{12}$|^\d{13}$|^\d{14}$/.test(code)) return true;
+  var body = code.slice(0, -1);
+  var check = Number(code.slice(-1));
+  var sum = 0;
+  for (var i = body.length - 1, pos = 0; i >= 0; i--, pos++) {
+    sum += Number(body[i]) * (pos % 2 === 0 ? 3 : 1);
+  }
+  return ((10 - (sum % 10)) % 10) === check;
+}
+
+function isLikelyRetailBarcode(code) {
+  if (!/^\d{8}$|^\d{12}$|^\d{13}$|^\d{14}$/.test(code)) return false;
+  return eanChecksumOk(code);
+}
+
+function barcodeVariants(code) {
+  var out = [code];
+  if (/^0\d{12}$/.test(code)) out.push(code.slice(1));
+  if (/^\d{12}$/.test(code)) out.push('0' + code);
+  return out.filter(function(v, i, arr){ return arr.indexOf(v) === i; });
+}
+
+function updateBarcodeCameraControls() {
+  var vid = document.getElementById('bc-video');
+  var tb = document.getElementById('torch-btn-bc');
+  if (!vid || !vid.srcObject || !tb) return;
+  try {
+    var track = vid.srcObject.getVideoTracks()[0];
+    var caps = track && track.getCapabilities ? track.getCapabilities() : {};
+    if (caps && caps.torch) tb.style.display = 'flex';
+  } catch(e) {}
 }
 
 function stopBarcode() {
@@ -2440,6 +2510,7 @@ function stopBarcode() {
       }
       vid.pause();
     } catch(e) {}
+    vid.onloadedmetadata = null;
     vid.style.display = 'none';
   }
   // Stop module-level bcStream reference if set
@@ -2473,12 +2544,17 @@ async function toggleTorchBC() {
 }
 
 // ── Multi-database product lookup ────────────────────────────────────
-// Tries: 1. Open Food Facts global  2. OFF world (alternative endpoint)
-// 3. UPC Item DB  — falls back gracefully through each
+// Tries: 1. OFF Netherlands  2. OFF world  3. AH/Lidl-scored OFF search
+// 4. UPC Item DB. Exact barcode wins, but NL supermarket data is preferred.
 async function fetchProduct(barcode) {
   var statusEl = document.getElementById('bc-status-wrap');
   if (!statusEl) return;
-  statusEl.innerHTML = '<div class="ocr-st loading"><div class="spin"></div>Looking up barcode ' + esc(barcode) + '…</div>';
+  var cleanBarcode = normalizeBarcode(barcode);
+  if (!isLikelyRetailBarcode(cleanBarcode)) {
+    statusEl.innerHTML = '<div class="ocr-st err">That scan did not look like a valid retail barcode. Try again with the whole EAN/UPC in frame.</div>';
+    return;
+  }
+  statusEl.innerHTML = '<div class="ocr-st loading"><div class="spin"></div>Looking up ' + esc(cleanBarcode) + ' in Dutch supermarket data…</div>';
 
   // ── helper: fetch with timeout ──────────────────────────────────────
   function fetchWithTimeout(url, ms) {
@@ -2501,14 +2577,21 @@ async function fetchProduct(barcode) {
   // as printed on label). scalePortions() then multiplies by
   // (my_serving / ref_size) when the user sets their portion.
   // Do NOT pre-scale here — that caused double-scaling.
-  function parseOFF(p) {
+  function parseOFF(p, sourceLabel) {
     if (!p) return null;
     var nm = p.nutriments || {};
 
     // Product name — try EN first, then generic, then abbreviated
     var name  = (p.product_name_en || p.product_name || p.abbreviated_product_name || '').trim();
-    if (!name) name = 'Product ' + barcode;
+    if (!name) name = 'Product ' + cleanBarcode;
     var brand = (p.brands || '').split(',')[0].trim();
+    var storesText = [p.stores, p.stores_tags, p.brands_tags, p.countries_tags].join(' ').toLowerCase();
+    var preferredStore = '';
+    if (/albert[-_\s]?heijn|\bah\b/.test(storesText) || /albert[-_\s]?heijn|\bah\b/.test((p.brands || '').toLowerCase())) {
+      preferredStore = 'Albert Heijn';
+    } else if (/lidl/.test(storesText) || /lidl/.test((p.brands || '').toLowerCase())) {
+      preferredStore = 'Lidl';
+    }
 
     // Reference serving size — what the label "per X g" line refers to.
     // We default to 100g so values are always per-100g.
@@ -2551,6 +2634,8 @@ async function fetchProduct(barcode) {
     return {
       name:       name,
       brand:      brand,
+      store:      preferredStore,
+      source:     sourceLabel || 'Open Food Facts',
       refSize:    refSize,        // always 100 — reference is per 100g
       labelServing: labelServing, // the labelled serving (e.g. 30g) — used as "my serving" default
       unit:       unit,
@@ -2564,44 +2649,90 @@ async function fetchProduct(barcode) {
   }
 
   var result = null;
+  var candidates = [];
+  var offFields = 'product_name,product_name_en,abbreviated_product_name,brands,brands_tags,stores,stores_tags,countries_tags,nutriments,serving_size,serving_quantity,serving_quantity_unit';
 
-  // ── 1. Open Food Facts v2 (global, best data) ───────────────────────
-  try {
-    var r1 = await fetchWithTimeout(
-      'https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(barcode) +
-      '.json?fields=product_name,product_name_en,abbreviated_product_name,brands,nutriments,serving_size,serving_quantity,serving_quantity_unit',
-      8000
-    );
-    if (r1.ok) {
-      var d1 = await safeJsonLocal(r1);
-      if (d1 && d1.status === 1 && d1.product) {
-        result = parseOFF(d1.product);
-      }
-    }
-  } catch(e1) { /* network/timeout — try next */ }
-
-  // ── 2. OFF by-barcode alternative endpoint ───────────────────────────
-  if (!result) {
+  async function tryOFFProduct(host, code, label, timeout) {
     try {
-      var r2 = await fetchWithTimeout(
-        'https://world.openfoodfacts.org/cgi/search.pl?code=' + encodeURIComponent(barcode) +
-        '&action=process&json=1&fields=product_name,brands,nutriments,serving_quantity,serving_size',
-        6000
+      var r = await fetchWithTimeout(
+        'https://' + host + '/api/v2/product/' + encodeURIComponent(code) +
+        '.json?fields=' + encodeURIComponent(offFields),
+        timeout || 7000
       );
-      if (r2.ok) {
-        var d2 = await safeJsonLocal(r2);
-        if (d2 && d2.products && d2.products.length > 0) {
-          result = parseOFF(d2.products[0]);
+      if (r.ok) {
+        var d = await safeJsonLocal(r);
+        if (d && d.status === 1 && d.product) {
+          candidates.push(parseOFF(d.product, label));
         }
       }
-    } catch(e2) { /* try next */ }
+    } catch(e) {}
   }
 
-  // ── 3. UPC Item DB (name only for US products) ───────────────────────
+  async function tryOFFSearch(code, timeout) {
+    try {
+      var r = await fetchWithTimeout(
+        'https://world.openfoodfacts.org/cgi/search.pl?code=' + encodeURIComponent(code) +
+        '&action=process&json=1&fields=' + encodeURIComponent(offFields),
+        timeout || 6000
+      );
+      if (r.ok) {
+        var d = await safeJsonLocal(r);
+        if (d && d.products && d.products.length > 0) {
+          d.products.forEach(function(p){ candidates.push(parseOFF(p, 'Open Food Facts')); });
+        }
+      }
+    } catch(e) {}
+  }
+
+  async function tryPreferredStoreSearch(code) {
+    var terms = ['Albert Heijn ' + code, 'AH ' + code, 'Lidl ' + code];
+    for (var ti = 0; ti < terms.length; ti++) {
+      try {
+        var r = await fetchWithTimeout(
+          'https://world.openfoodfacts.org/api/v2/search?search_terms=' + encodeURIComponent(terms[ti]) +
+          '&page_size=4&json=1&fields=' + encodeURIComponent(offFields),
+          4500
+        );
+        if (r.ok) {
+          var d = await safeJsonLocal(r);
+          if (d && Array.isArray(d.products)) {
+            d.products.forEach(function(p){ candidates.push(parseOFF(p, 'Open Food Facts')); });
+          }
+        }
+      } catch(e) {}
+    }
+  }
+
+  var variants = barcodeVariants(cleanBarcode);
+  for (var vi = 0; vi < variants.length; vi++) {
+    await tryOFFProduct('nl.openfoodfacts.org', variants[vi], 'Open Food Facts NL', 7500);
+    await tryOFFProduct('world.openfoodfacts.org', variants[vi], 'Open Food Facts', 7500);
+    await tryOFFSearch(variants[vi], 5500);
+  }
+  var hasPreferredStore = candidates.some(function(c){ return c && (c.store === 'Albert Heijn' || c.store === 'Lidl'); });
+  if (!hasPreferredStore) await tryPreferredStoreSearch(cleanBarcode);
+
+  candidates = candidates.filter(Boolean);
+  if (candidates.length) {
+    candidates.sort(function(a, b) {
+      function score(x) {
+        var s = 0;
+        if (x.store === 'Albert Heijn' || x.store === 'Lidl') s += 80;
+        if (x.source === 'Open Food Facts NL') s += 30;
+        if (x.cal > 0 || x.prot > 0 || x.carbs > 0 || x.fat > 0) s += 20;
+        if (x.brand) s += 5;
+        return s;
+      }
+      return score(b) - score(a);
+    });
+    result = candidates[0];
+  }
+
+  // ── UPC Item DB (name only fallback) ────────────────────────────────
   if (!result) {
     try {
       var r3 = await fetchWithTimeout(
-        'https://api.upcitemdb.com/prod/trial/lookup?upc=' + encodeURIComponent(barcode),
+        'https://api.upcitemdb.com/prod/trial/lookup?upc=' + encodeURIComponent(cleanBarcode),
         6000
       );
       if (r3.ok) {
@@ -2609,8 +2740,10 @@ async function fetchProduct(barcode) {
         if (d3 && d3.code === 'OK' && d3.items && d3.items.length > 0) {
           var item = d3.items[0];
           result = {
-            name: item.title || ('Product ' + barcode),
+            name: item.title || ('Product ' + cleanBarcode),
             brand: item.brand || '',
+            store: '',
+            source: 'UPC Item DB',
             refSize: 100, labelServing: 100, unit: 'g',
             cal:0, prot:0, carbs:0, fat:0, fiber:0, sod:0,
             noNutrition: true
@@ -2622,9 +2755,13 @@ async function fetchProduct(barcode) {
 
   // ── Render result ────────────────────────────────────────────────────
   if (result) {
+    var sourceLine = [
+      result.store || '',
+      result.source || ''
+    ].filter(Boolean).join(' · ');
     var warningHtml = result.noNutrition
       ? '<div style="font-size:11px;color:var(--on-surf3);margin-top:4px">Name found — fill in nutrition values manually</div>'
-      : '<div style="font-size:11px;color:var(--on-surf3);margin-top:4px">Values are per 100' + result.unit + ' — adjust portion below</div>';
+      : '<div style="font-size:11px;color:var(--on-surf3);margin-top:4px">' + esc(sourceLine || 'Open product data') + ' · values are per 100' + esc(result.unit) + '</div>';
 
     statusEl.innerHTML = '<div class="ocr-st ok">✓ ' + esc(result.name) +
       (result.brand ? ' · <span style="color:var(--on-surf3)">' + esc(result.brand) + '</span>' : '') +
@@ -2633,14 +2770,14 @@ async function fetchProduct(barcode) {
     document.getElementById('bc-product-wrap').innerHTML =
       '<div class="product-card">' +
         '<div class="pc-name">'  + esc(result.name) + '</div>' +
-        (result.brand ? '<div class="pc-brand">' + esc(result.brand) + '</div>' : '') +
+        ((result.brand || sourceLine) ? '<div class="pc-brand">' + esc([result.brand, sourceLine].filter(Boolean).join(' · ')) + '</div>' : '') +
         (result.noNutrition ? '' :
           '<div class="pc-macros">' +
             '<div class="pc-macro" style="color:var(--accent-cal)">'  + result.cal   + ' kcal</div>' +
             '<div class="pc-macro" style="color:var(--accent-prot)">P ' + result.prot  + 'g</div>' +
             '<div class="pc-macro" style="color:var(--accent-carb)">C ' + result.carbs + 'g</div>' +
             '<div class="pc-macro" style="color:var(--accent-fat)">F '  + result.fat   + 'g</div>' +
-            '<div style="font-size:10px;color:var(--on-surf3);margin-top:4px">per 100' + result.unit + '</div>' +
+            '<div style="font-size:10px;color:var(--on-surf3);margin-top:4px">per 100' + esc(result.unit) + '</div>' +
           '</div>'
         ) +
       '</div>';
@@ -2667,10 +2804,10 @@ async function fetchProduct(barcode) {
     // Nothing found in any database
     statusEl.innerHTML =
       '<div class="ocr-st err">' +
-        'Barcode <strong>' + esc(barcode) + '</strong> not found in any database. ' +
-        'Switch to <strong>Nutrition Label</strong> tab to scan the label, or enter values manually below.' +
+        'Barcode <strong>' + esc(cleanBarcode) + '</strong> was not found in the Dutch/global product databases. ' +
+        'Enter values manually below from the package label.' +
       '</div>';
-    setF('scan-name', 'Product ' + barcode);
+    setF('scan-name', 'Product ' + cleanBarcode);
     document.getElementById('scan-fields').style.display = 'block';
   }
 }
@@ -2925,8 +3062,7 @@ function openSheet(id) {
   document.getElementById(scrimId).classList.add('open');
   if (id === 'sh-goals')    openGoalsSheet();
   if (id === 'sh-settings') updateSyncStatus();
-  if (id === 'sh-library')  { renderLibrary(''); renderRecipes(''); }
-  // sh-newrecipe: opened explicitly via openNewRecipe(id) — no auto-call
+  if (id === 'sh-library')  renderLibrary('');
 }
 function closeSheet(id) {
   var scrimId = 'sc-' + id.replace('sh-','');
@@ -3780,8 +3916,7 @@ function saveEditedEntry() {
     serving: document.getElementById('ee-serving').value || '',
     unit:    document.getElementById('ee-unit').value,
     ts:      orig.ts || Date.now(),
-    scanned: orig.scanned || false,
-    fromRecipe: orig.fromRecipe || false
+    scanned: orig.scanned || false
   };
   saveDay(currentDate, day);
   renderToday();
@@ -3797,297 +3932,9 @@ function deleteEditedEntry() {
   delItem(meal, idx);
 }
 
-// ═══════════════════════════════════════════════════════
-//  RECIPES
-//  Stored in localStorage key 'ns3_recipes'
-//  Recipe = {id, name, ingredients:[{foodId, name, amount, unit, cal, prot, carbs, fat, fiber}], totals, updated_at}
-// ═══════════════════════════════════════════════════════
-var _recipeIngredients = [];  // working list for the new/edit recipe sheet
-
-function getRecipes() {
-  try { return JSON.parse(localStorage.getItem('ns3_recipes') || '[]'); }
-  catch(e) { return []; }
-}
-function saveRecipes(recipes) {
-  localStorage.setItem('ns3_recipes', JSON.stringify(recipes));
-}
-function recipeId() { return 'r_' + Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
-
-// ── Calc totals from ingredient list ──────────────────
-function calcRecipeTotals(ingredients) {
-  var t = {cal:0,prot:0,carbs:0,fat:0,fiber:0,sodium:0};
-  ingredients.forEach(function(ing) {
-    // Scale from food's refsize to the amount used
-    var scale = ing.refsize > 0 ? (ing.amount / ing.refsize) : 1;
-    t.cal    += (ing.cal_ref    || 0) * scale;
-    t.prot   += (ing.prot_ref   || 0) * scale;
-    t.carbs  += (ing.carbs_ref  || 0) * scale;
-    t.fat    += (ing.fat_ref    || 0) * scale;
-    t.fiber  += (ing.fiber_ref  || 0) * scale;
-    t.sodium += (ing.sodium_ref || 0) * scale;
-  });
-  Object.keys(t).forEach(function(k){ t[k] = rnd(t[k]); });
-  return t;
-}
-
-// ── Render recipe totals in the new-recipe sheet ──────
-function updateRecipeTotals() {
-  var t = calcRecipeTotals(_recipeIngredients);
-  var hasSome = _recipeIngredients.length > 0;
-  document.getElementById('recipe-totals').style.display = hasSome ? 'block' : 'none';
-  if (hasSome) {
-    document.getElementById('rt-cal').textContent  = t.cal;
-    document.getElementById('rt-prot').textContent = t.prot + 'g';
-    document.getElementById('rt-carb').textContent = t.carbs + 'g';
-    document.getElementById('rt-fat').textContent  = t.fat + 'g';
-  }
-  renderRecipeIngrList();
-}
-
-// ── Render ingredient list inside recipe builder ──────
-function renderRecipeIngrList() {
-  var el = document.getElementById('recipe-ingr-list');
-  if (!el) return;
-  if (!_recipeIngredients.length) {
-    el.innerHTML = '<div style="font-size:13px;color:var(--on-surf3);padding:8px 0">No ingredients yet. Search above to add.</div>';
-    return;
-  }
-  el.innerHTML = _recipeIngredients.map(function(ing, i) {
-    return '<div class="recipe-ingr">' +
-      '<div class="recipe-ingr-name">' + esc(ing.name) + '</div>' +
-      '<input class="finput ri-amount" type="number" inputmode="decimal" value="' + ing.amount + '" ' +
-        'style="width:70px;padding:6px 8px;font-size:13px;text-align:right" ' +
-        'data-ri="' + i + '">' +
-      '<span style="font-size:12px;color:var(--on-surf3);margin-left:2px">' + esc(ing.unit||'g') + '</span>' +
-      '<span class="recipe-ingr-val ri-cal" data-ri="' + i + '">' + rnd((ing.cal_ref||0)*(ing.amount/Math.max(ing.refsize,1))) + ' kcal</span>' +
-      '<button class="lib-btn del ri-del" data-ri="' + i + '" style="flex-shrink:0">' +
-        '<svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>' +
-      '</button>' +
-    '</div>';
-  }).join('');
-
-  // Attach handlers with closures — no inline onclick/onchange
-  var amounts = el.querySelectorAll('.ri-amount');
-  var delBtns = el.querySelectorAll('.ri-del');
-  for (var ai=0; ai<amounts.length; ai++) {
-    amounts[ai].addEventListener('change', (function(inp){
-      return function(){ updateIngrAmount(inp); };
-    })(amounts[ai]));
-    amounts[ai].addEventListener('input', (function(inp){
-      return function(){ updateIngrAmount(inp); };
-    })(amounts[ai]));
-  }
-  for (var di=0; di<delBtns.length; di++) {
-    delBtns[di].addEventListener('click', (function(idx){
-      return function(){ removeRecipeIngr(idx); };
-    })(parseInt(delBtns[di].getAttribute('data-ri'),10)));
-  }
-}
-
-function updateIngrAmount(input) {
-  var i   = parseInt(input.getAttribute('data-ri'), 10);
-  var val = parseFloat(input.value) || 0;
-  if (_recipeIngredients[i]) {
-    _recipeIngredients[i].amount = val;
-    updateRecipeTotals();
-  }
-}
-
-function removeRecipeIngr(i) {
-  _recipeIngredients.splice(i, 1);
-  updateRecipeTotals();
-}
-
-// ── Search library for recipe ingredient ─────────────
-function searchRecipeIngr(query) {
-  var resultsEl = document.getElementById('recipe-ingr-results');
-  if (!resultsEl) return;
-  var q = (query || '').trim().toLowerCase();
-  if (!q) { resultsEl.classList.remove('show'); resultsEl.innerHTML=''; return; }
-  var lib  = getLibrary();
-  var hits = lib.filter(function(f){ return f.name.toLowerCase().indexOf(q)!==-1; }).slice(0,8);
-  if (!hits.length) {
-    resultsEl.innerHTML='<div class="food-results-empty">Not in library — add food first</div>';
-    resultsEl.classList.add('show'); return;
-  }
-  resultsEl.innerHTML = hits.map(function(f) {
-    return '<div class="food-result-item" style="cursor:pointer">' +
-      '<div><div class="fri-name">' + esc(f.name) + '</div>' +
-      '<div class="fri-macros">' + (f.cal||0) + ' kcal per ' + (f.refsize||100) + (f.unit||'g') + '</div></div>' +
-    '</div>';
-  }).join('');
-  var items = resultsEl.querySelectorAll('.food-result-item');
-  for (var i=0; i<items.length; i++) {
-    items[i].addEventListener('click', (function(food) {
-      return function() {
-        addRecipeIngr(food);
-        document.getElementById('recipe-ingr-search').value = '';
-        resultsEl.classList.remove('show');
-        resultsEl.innerHTML = '';
-      };
-    })(hits[i]));
-  }
-  resultsEl.classList.add('show');
-}
-
-function addRecipeIngr(food) {
-  _recipeIngredients.push({
-    foodId:    food.id,
-    name:      food.name,
-    refsize:   food.refsize || 100,
-    unit:      food.unit    || 'g',
-    amount:    food.refsize || 100,  // default: one reference serving
-    cal_ref:   food.cal    || 0,
-    prot_ref:  food.prot   || 0,
-    carbs_ref: food.carbs  || 0,
-    fat_ref:   food.fat    || 0,
-    fiber_ref: food.fiber  || 0,
-    sodium_ref:food.sodium || 0
-  });
-  updateRecipeTotals();
-}
-
-// ── Open new/edit recipe sheet ────────────────────────
-function openNewRecipe(recipeIdToEdit) {
-  _recipeIngredients = [];
-  document.getElementById('recipe-edit-id').value = '';
-  document.getElementById('recipe-name').value    = '';
-  document.getElementById('recipe-delete-btn').style.display = 'none';
-  document.getElementById('recipe-sheet-title').textContent  = 'New recipe';
-
-  if (recipeIdToEdit) {
-    var rec = getRecipes().filter(function(r){ return r.id===recipeIdToEdit; })[0];
-    if (rec) {
-      document.getElementById('recipe-edit-id').value = rec.id;
-      document.getElementById('recipe-name').value    = rec.name;
-      document.getElementById('recipe-sheet-title').textContent = 'Edit recipe';
-      document.getElementById('recipe-delete-btn').style.display = 'block';
-      _recipeIngredients = rec.ingredients ? rec.ingredients.slice() : [];
-    }
-  }
-  updateRecipeTotals();
-  openSheet('sh-newrecipe');
-}
-
-// ── Save recipe ───────────────────────────────────────
-function saveRecipe() {
-  var name = document.getElementById('recipe-name').value.trim();
-  if (!name) { showToast('Enter a recipe name'); return; }
-  if (!_recipeIngredients.length) { showToast('Add at least one ingredient'); return; }
-
-  var totals = calcRecipeTotals(_recipeIngredients);
-  var recipes = getRecipes();
-  var editId  = document.getElementById('recipe-edit-id').value;
-  var idx     = editId ? recipes.findIndex(function(r){ return r.id===editId; }) : -1;
-
-  var recipe = {
-    id:          editId || recipeId(),
-    name:        name,
-    ingredients: _recipeIngredients.slice(),
-    totals:      totals,
-    updated_at:  Date.now()
-  };
-
-  if (idx >= 0) { recipes[idx] = recipe; }
-  else { recipes.push(recipe); }
-  recipes.sort(function(a,b){ return a.name.localeCompare(b.name); });
-  saveRecipes(recipes);
-
-  // Also save recipe as a library food so it's searchable when adding to meals
-  upsertToLibrary({
-    id:      'recipe_' + recipe.id,
-    name:    name + ' (recipe)',
-    refsize: 1,
-    unit:    'serving',
-    cal:     totals.cal,
-    prot:    totals.prot,
-    carbs:   totals.carbs,
-    fat:     totals.fat,
-    fiber:   totals.fiber,
-    sodium:  totals.sodium,
-    isRecipe:  true,
-    recipeId:  recipe.id
-  });
-
-  closeSheet('sh-newrecipe');
-  renderRecipes('');
-  showToast('Recipe saved ✓');
-}
-
-// ── Delete recipe ─────────────────────────────────────
-function deleteRecipe() {
-  var id = document.getElementById('recipe-edit-id').value;
-  if (!id) return;
-  var recipes = getRecipes().filter(function(r){ return r.id!==id; });
-  saveRecipes(recipes);
-  // Also remove from library
-  var lib = getLibrary().filter(function(f){ return f.recipeId!==id; });
-  saveLibrary(lib);
-  closeSheet('sh-newrecipe');
-  renderRecipes('');
-  showToast('Recipe deleted');
-}
-
-// ── Log recipe as a single entry ─────────────────────
-function logRecipe(recipeId, meal) {
-  var rec = getRecipes().filter(function(r){ return r.id===recipeId; })[0];
-  if (!rec) return;
-  var t = rec.totals;
-  logEntry(meal || 'lunch', {
-    name:       rec.name,
-    cal:        t.cal, prot:t.prot, carbs:t.carbs,
-    fat:        t.fat, fiber:t.fiber, sodium:t.sodium,
-    serving:    1, unit:'serving',
-    fromRecipe: true,
-    recipeId:   recipeId,
-    ts:         Date.now()
-  });
-}
-
-// ── Render recipe list ────────────────────────────────
-function renderRecipes(filter) {
-  var el = document.getElementById('recipe-list');
-  if (!el) return;
-  var recipes = getRecipes();
-  var q = (filter||'').trim().toLowerCase();
-  var filtered = q ? recipes.filter(function(r){ return r.name.toLowerCase().indexOf(q)!==-1; }) : recipes;
-
-  if (!filtered.length) {
-    el.innerHTML = '<div class="lib-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:40px;height:40px;display:block;margin:0 auto 12px;opacity:.3"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>' +
-      (q ? 'No recipes match "'+esc(q)+'"' : 'No recipes yet. Tap <strong>+ New recipe</strong> to create one.') + '</div>';
-    return;
-  }
-
-  el.innerHTML = filtered.map(function(rec) {
-    var t = rec.totals || {};
-    return '<div class="recipe-card">' +
-      '<div class="recipe-card-name">' + esc(rec.name) + '</div>' +
-      '<div class="recipe-card-macros">' + (t.cal||0) + ' kcal &middot; P ' + (t.prot||0) + 'g &middot; C ' + (t.carbs||0) + 'g &middot; F ' + (t.fat||0) + 'g' +
-        ' &middot; ' + (rec.ingredients ? rec.ingredients.length : 0) + ' ingredients</div>' +
-      '<div class="recipe-card-actions">' +
-        '<button class="btn-p recipe-log-btn" style="flex:1;margin-top:0;padding:10px" data-rid="' + esc(rec.id) + '">Add to log</button>' +
-        '<button class="btn-s recipe-edit-btn" style="flex:1;margin-top:0;padding:9px" data-rid="' + esc(rec.id) + '">Edit</button>' +
-      '</div>' +
-    '</div>';
-  }).join('');
-
-  // Attach handlers via closures — inline onclick with escaped quotes was unsafe
-  var logBtns  = el.querySelectorAll('.recipe-log-btn');
-  var editBtns = el.querySelectorAll('.recipe-edit-btn');
-  for (var ri=0; ri<logBtns.length; ri++) {
-    logBtns[ri].addEventListener('click', (function(id){ return function(){ logRecipePrompt(id); }; })(logBtns[ri].getAttribute('data-rid')));
-  }
-  for (var ei=0; ei<editBtns.length; ei++) {
-    editBtns[ei].addEventListener('click', (function(id){ return function(){ openNewRecipe(id); }; })(editBtns[ei].getAttribute('data-rid')));
-  }
-}
-
-// ── Hook openSheet for recipes/editentry ─────────────
-// (existing openSheet already has sh-library hook — extend it below)
-
-// ── Close lib-results and recipe-ingr-results on outside click ───────
+// ── Close library search results on outside click ───────
 document.addEventListener('click', function(e) {
-  var wraps = ['lib-search','recipe-ingr-search'];
+  var wraps = ['lib-search'];
   wraps.forEach(function(inputId) {
     var input = document.getElementById(inputId);
     if (!input) return;
@@ -4098,60 +3945,6 @@ document.addEventListener('click', function(e) {
     }
   });
 });
-
-
-
-// ── Library tab switcher ─────────────────────────────────────────────
-function switchLibTab(tab) {
-  ['foods','recipes'].forEach(function(t) {
-    document.getElementById('lt-'  +t).classList.toggle('active', t===tab);
-    document.getElementById('ltp-' +t).classList.toggle('active', t===tab);
-  });
-  if (tab==='foods')   renderLibrary(document.getElementById('lib-filter') ? document.getElementById('lib-filter').value : '');
-  if (tab==='recipes') renderRecipes(document.getElementById('recipe-filter') ? document.getElementById('recipe-filter').value : '');
-}
-
-function logRecipePrompt(rid) {
-  var meals  = ['breakfast','lunch','dinner','snacks'];
-  var labels = ['Breakfast','Lunch','Dinner','Snacks'];
-
-  var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:299;background:rgba(0,0,0,.3)';
-
-  var sheet = document.createElement('div');
-  sheet.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:300;background:var(--surface);border-radius:28px 28px 0 0;padding:20px 20px 40px;box-shadow:0 -4px 24px rgba(0,0,0,.15)';
-
-  var title = document.createElement('div');
-  title.style.cssText = 'font-size:16px;font-weight:700;margin-bottom:16px;text-align:center';
-  title.textContent = 'Add to which meal?';
-  sheet.appendChild(title);
-
-  function closePicker() {
-    if (overlay.parentNode) document.body.removeChild(overlay);
-    if (sheet.parentNode)   document.body.removeChild(sheet);
-  }
-
-  meals.forEach(function(m, i) {
-    var btn = document.createElement('button');
-    btn.textContent = labels[i];
-    btn.style.cssText = 'display:block;width:100%;padding:13px;margin-bottom:8px;background:var(--surf2);border:none;border-radius:16px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;text-align:left;color:var(--on-surf)';
-    btn.addEventListener('click', (function(meal) {
-      return function() { logRecipe(rid, meal); closePicker(); };
-    })(m));
-    sheet.appendChild(btn);
-  });
-
-  var cancelBtn = document.createElement('button');
-  cancelBtn.textContent = 'Cancel';
-  cancelBtn.style.cssText = 'display:block;width:100%;padding:12px;background:none;border:none;font-family:inherit;font-size:13px;color:var(--on-surf3);cursor:pointer';
-  cancelBtn.addEventListener('click', closePicker);
-  sheet.appendChild(cancelBtn);
-
-  overlay.addEventListener('click', closePicker);
-
-  document.body.appendChild(overlay);
-  document.body.appendChild(sheet);
-}
 
 // ── Midnight auto-reset ───────────────────────────────────────────────
 // When the clock rolls past midnight, snap the view to the new day so
