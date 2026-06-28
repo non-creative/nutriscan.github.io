@@ -2381,6 +2381,8 @@ var bcReader     = null;
 var bcActive     = false;
 var lastBarcode  = '';
 var lastBarcodeTs = 0;
+var bcNativeTimer = null;
+var bcNativeBusy  = false;
 // Auto-capture state — counts stable sharp frames
 // Auto-capture fires after this many consecutive stable high-edge frames
 // Each rAF ~60fps → 40 frames = ~0.67s of stability required
@@ -2431,6 +2433,48 @@ function createBarcodeHints() {
     hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
   } catch(eh) { hints = null; }
   return hints;
+}
+
+function stopNativeBarcodeLoop() {
+  if (bcNativeTimer) {
+    clearTimeout(bcNativeTimer);
+    bcNativeTimer = null;
+  }
+  bcNativeBusy = false;
+}
+
+function startNativeBarcodeLoop(videoEl, onText) {
+  stopNativeBarcodeLoop();
+  if (!videoEl || typeof getNativeBarcodeDetector !== 'function') return;
+  getNativeBarcodeDetector().then(function(detector) {
+    if (!detector || !bcActive) return;
+
+    function tick() {
+      if (!bcActive || !videoEl || !videoEl.srcObject) { stopNativeBarcodeLoop(); return; }
+      if (bcNativeBusy || videoEl.readyState < 2) {
+        bcNativeTimer = setTimeout(tick, 140);
+        return;
+      }
+      bcNativeBusy = true;
+      detector.detect(videoEl).then(function(found) {
+        bcNativeBusy = false;
+        if (!bcActive) return;
+        if (found && found.length) {
+          var raw = found[0].rawValue || '';
+          if (raw) {
+            onText(raw, 'Native camera');
+            return;
+          }
+        }
+        bcNativeTimer = setTimeout(tick, 160);
+      }, function() {
+        bcNativeBusy = false;
+        bcNativeTimer = setTimeout(tick, 220);
+      });
+    }
+
+    tick();
+  }).catch(function(){});
 }
 
 async function startBarcodeScanner() {
@@ -2493,24 +2537,28 @@ async function startBarcodeScanner() {
 
     statusEl.innerHTML = '<div class="ocr-st loading"><div class="spin"></div>Aim at the barcode. Fill the frame, keep it flat, and use good light.</div>';
 
+    var handleDecodedBarcode = function(raw, source) {
+      if (!bcActive) return;
+      var code = normalizeBarcode(raw);
+      if (!isLikelyRetailBarcode(code)) {
+        statusEl.innerHTML = '<div class="ocr-st loading"><div class="spin"></div>Detected ' + esc(raw) + ', waiting for a valid EAN/UPC barcode…</div>';
+        return;
+      }
+      var now = Date.now();
+      if (code === lastBarcode && now - lastBarcodeTs < 1200) return;
+      lastBarcode = code;
+      lastBarcodeTs = now;
+      bcActive = false;
+      if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
+      stopBarcode();
+      fetchProduct(code);
+    };
+
+    startNativeBarcodeLoop(vid, handleDecodedBarcode);
+
     var onDetected = function(result, err) {
       if (!bcActive) return;
-      if (result) {
-        var raw = result.getText ? result.getText() : String(result);
-        var code = normalizeBarcode(raw);
-        if (!isLikelyRetailBarcode(code)) {
-          statusEl.innerHTML = '<div class="ocr-st loading"><div class="spin"></div>Detected ' + esc(raw) + ', waiting for a valid EAN/UPC barcode…</div>';
-          return;
-        }
-        var now = Date.now();
-        if (code === lastBarcode && now - lastBarcodeTs < 1200) return;
-        lastBarcode = code;
-        lastBarcodeTs = now;
-        bcActive = false;
-        if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
-        stopBarcode();
-        fetchProduct(code);
-      }
+      if (result) handleDecodedBarcode(result.getText ? result.getText() : String(result), 'ZXing camera');
       // err = NotFoundException every empty frame — completely normal, ignore
     };
 
@@ -2606,6 +2654,7 @@ function updateBarcodeCameraControls() {
 
 function stopBarcode() {
   bcActive = false;
+  stopNativeBarcodeLoop();
   // reset() stops the decode loop AND releases the camera track
   if (bcReader) {
     try { bcReader.reset(); } catch(e) {}
@@ -2652,6 +2701,63 @@ async function toggleTorchBC() {
     var tb = document.getElementById('torch-btn-bc');
     if (tb) tb.style.background = torchOnBC ? 'rgba(255,220,0,.4)' : 'rgba(0,0,0,.4)';
   } catch(e) { torchOnBC = false; }
+}
+
+var BARCODE_CACHE_KEY = 'ns3_barcode_cache';
+var BARCODE_CACHE_MAX = 200;
+var BARCODE_CACHE_TTL = 1000 * 60 * 60 * 24 * 90;
+
+function getBarcodeCache() {
+  try { return JSON.parse(localStorage.getItem(BARCODE_CACHE_KEY) || '{}') || {}; }
+  catch(e) { return {}; }
+}
+function saveBarcodeCache(cache) {
+  try { localStorage.setItem(BARCODE_CACHE_KEY, JSON.stringify(cache || {})); } catch(e) {}
+}
+function getCachedBarcodeProduct(barcode) {
+  var code = cleanBarcodeForStorage(barcode);
+  if (!code) return null;
+  var cache = getBarcodeCache();
+  var variants = barcodeVariants(code);
+  for (var i=0; i<variants.length; i++) {
+    var entry = cache[variants[i]];
+    if (entry && entry.product && Date.now() - (entry.ts || 0) < BARCODE_CACHE_TTL) {
+      var product = Object.assign({}, entry.product);
+      product.barcode = code;
+      product._score = Math.max(product._score || 0, 180);
+      return product;
+    }
+  }
+  return null;
+}
+function saveBarcodeProductCache(barcode, product) {
+  var code = cleanBarcodeForStorage(barcode);
+  if (!code || !product) return;
+  var cache = getBarcodeCache();
+  cache[code] = {
+    ts: Date.now(),
+    product: {
+      name: product.name || ('Product ' + code),
+      brand: product.brand || '',
+      store: product.store || '',
+      source: product.source || '',
+      barcode: code,
+      refSize: product.refSize || 100,
+      labelServing: product.labelServing || product.refSize || 100,
+      unit: product.unit || 'g',
+      cal: rnd(product.cal || 0),
+      prot: rnd(product.prot || 0),
+      carbs: rnd(product.carbs || 0),
+      fat: rnd(product.fat || 0),
+      fiber: rnd(product.fiber || 0),
+      sod: rnd(product.sod || 0),
+      noNutrition: product.noNutrition ? true : false
+    }
+  };
+
+  var keys = Object.keys(cache).sort(function(a,b){ return (cache[b].ts || 0) - (cache[a].ts || 0); });
+  for (var i=BARCODE_CACHE_MAX; i<keys.length; i++) delete cache[keys[i]];
+  saveBarcodeCache(cache);
 }
 
 // ── Multi-database product lookup ────────────────────────────────────
@@ -2802,6 +2908,8 @@ async function fetchProduct(barcode) {
   var offFields = 'product_name,product_name_en,product_name_nl,generic_name,generic_name_en,generic_name_nl,abbreviated_product_name,brands,brands_tags,stores,stores_tags,countries_tags,nutriments,serving_size,serving_quantity,serving_quantity_unit';
   var cachedProduct = parseLibraryProduct(findLibraryFoodByBarcode(cleanBarcode));
   if (cachedProduct) candidates.push(cachedProduct);
+  var barcodeCacheProduct = cachedProduct ? null : getCachedBarcodeProduct(cleanBarcode);
+  if (barcodeCacheProduct) candidates.push(barcodeCacheProduct);
 
   async function tryOFFProduct(host, code, label, timeout) {
     try {
@@ -2837,10 +2945,11 @@ async function fetchProduct(barcode) {
 
   async function tryPreferredStoreSearch(code) {
     var terms = ['Albert Heijn ' + code, 'AH ' + code, 'Lidl ' + code];
-    for (var ti = 0; ti < terms.length; ti++) {
+    await Promise.all(terms.map(function(term) {
+      return (async function() {
       try {
         var r = await fetchWithTimeout(
-          'https://world.openfoodfacts.org/api/v2/search?search_terms=' + encodeURIComponent(terms[ti]) +
+          'https://world.openfoodfacts.org/api/v2/search?search_terms=' + encodeURIComponent(term) +
           '&page_size=4&json=1&fields=' + encodeURIComponent(offFields),
           4500
         );
@@ -2851,16 +2960,19 @@ async function fetchProduct(barcode) {
           }
         }
       } catch(e) {}
-    }
+      })();
+    }));
   }
 
-  if (!cachedProduct) {
+  if (!cachedProduct && !barcodeCacheProduct) {
     var variants = barcodeVariants(cleanBarcode);
+    var lookupJobs = [];
     for (var vi = 0; vi < variants.length; vi++) {
-      await tryOFFProduct('nl.openfoodfacts.org', variants[vi], 'Open Food Facts NL', 7500);
-      await tryOFFProduct('world.openfoodfacts.org', variants[vi], 'Open Food Facts', 7500);
-      await tryOFFSearch(variants[vi], 5500);
+      lookupJobs.push(tryOFFProduct('nl.openfoodfacts.org', variants[vi], 'Open Food Facts NL', 7500));
+      lookupJobs.push(tryOFFProduct('world.openfoodfacts.org', variants[vi], 'Open Food Facts', 7500));
+      lookupJobs.push(tryOFFSearch(variants[vi], 5500));
     }
+    await Promise.all(lookupJobs);
     var hasPreferredStore = candidates.some(function(c){ return c && (c.store === 'Albert Heijn' || c.store === 'Lidl'); });
     if (!hasPreferredStore) await tryPreferredStoreSearch(cleanBarcode);
   }
@@ -2910,6 +3022,7 @@ async function fetchProduct(barcode) {
 
   // ── Render result ────────────────────────────────────────────────────
   if (result) {
+    if (result.source !== 'Your library') saveBarcodeProductCache(cleanBarcode, result);
     var sourceLine = [
       result.store || '',
       result.source || ''
