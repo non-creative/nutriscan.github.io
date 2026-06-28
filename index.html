@@ -1204,6 +1204,13 @@ const SUPABASE_FOODS = 'nutriscan_foods';
         </button>
         <button class="cam-sec" id="bc-stop" onclick="stopBarcodeScanner()" style="display:none">Stop</button>
       </div>
+      <div class="row2" style="margin-top:12px;align-items:start">
+        <div class="field" style="margin-bottom:0">
+          <label class="flabel">Barcode</label>
+          <input class="finput" id="manual-barcode" type="text" inputmode="numeric" placeholder="EAN / UPC">
+        </div>
+        <button class="btn-s" onclick="lookupManualBarcode()" style="margin-top:22px">Lookup</button>
+      </div>
       <div id="bc-status-wrap" style="margin-top:10px"></div>
       <div id="bc-product-wrap"></div>
     </div>
@@ -1221,7 +1228,13 @@ const SUPABASE_FOODS = 'nutriscan_foods';
       </div>
       <div id="upload-preview" style="display:none;margin-top:10px">
         <img id="upload-img" style="width:100%;border-radius:var(--r);max-height:220px;object-fit:contain;background:#000;display:block">
-        <button class="cam-main" onclick="runOCR('upload')" style="width:100%;margin-top:10px">Analyse label</button>
+        <div class="cam-btns">
+          <button class="cam-main" onclick="decodeBarcodeFromUpload()" style="flex:1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 6h2v12H2zm3 0h1v12H5zm2 0h3v12H7zm4 0h1v12h-1zm3 0h2v12h-2zm3 0h1v12h-1zm2 0h2v12h-2z"/></svg>
+            Scan barcode
+          </button>
+          <button class="cam-sec" onclick="runOCR('upload')">Label</button>
+        </div>
       </div>
     </div>
 
@@ -1386,21 +1399,54 @@ const SUPABASE_FOODS = 'nutriscan_foods';
   </div>
   <div class="sheet-body">
     <div class="fsec">Supabase sync</div>
+    <div class="field">
+      <label class="flabel">Project URL</label>
+      <input class="finput" id="sb-url" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off">
+    </div>
+    <div class="field">
+      <label class="flabel">Anon public key</label>
+      <input class="finput" id="sb-key" type="password" placeholder="eyJhbGciOi..." autocomplete="off">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label class="flabel">Logs table</label>
+        <input class="finput" id="sb-table-logs" type="text" placeholder="nutriscan_logs" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="flabel">Foods table</label>
+        <input class="finput" id="sb-table-foods" type="text" placeholder="nutriscan_foods" autocomplete="off">
+      </div>
+    </div>
     <div id="sync-status" style="font-size:13px;color:var(--on-surf2);padding:10px 12px;background:var(--surf2);border-radius:var(--r);margin-bottom:12px;line-height:1.5;">
       Not configured
     </div>
+    <button class="btn-p" onclick="saveSupabaseSettings()">Save connection</button>
+    <button class="btn-s" onclick="testSupabaseConnection()">Test connection</button>
     <button class="btn-p" onclick="syncNow()">Sync now</button>
     <div style="background:var(--surf2);border-radius:var(--r);padding:12px 14px;margin-top:12px;font-size:12px;color:var(--on-surf2);line-height:1.6;">
       <strong style="color:var(--on-surf);display:block;margin-bottom:4px;">Supabase table SQL</strong>
       Run this in your Supabase SQL editor:<br>
       <code style="font-size:11px;background:var(--outline2);padding:6px 8px;border-radius:6px;display:block;margin-top:6px;color:var(--on-surf);white-space:pre-wrap;">create table if not exists nutriscan_logs (
   id text primary key,
-  date text, meal text, name text,
+  date text, meal text, name text, barcode text,
   cal int, prot int, carbs int, fat int,
   fiber int, sugar int, sodium int,
   serving text, unit text,
   scanned boolean, ts bigint
-);</code>
+);
+alter table nutriscan_logs add column if not exists barcode text;
+
+create table if not exists nutriscan_foods (
+  id text primary key,
+  barcode text,
+  name text not null,
+  refsize numeric, unit text,
+  cal numeric, prot numeric, carbs numeric, fat numeric,
+  fiber numeric, sodium numeric,
+  updated_at bigint
+);
+alter table nutriscan_foods add column if not exists barcode text;
+create index if not exists nutriscan_foods_barcode_idx on nutriscan_foods (barcode);</code>
     </div>
     <div class="fsec" style="margin-top:20px;">Data</div>
     <button class="btn-s" onclick="exportJSON()">Export JSON</button>
@@ -1442,6 +1488,7 @@ const SUPABASE_FOODS = 'nutriscan_foods';
   <div class="sheet-body">
     <input type="hidden" id="ef-id">
     <div class="field"><label class="flabel">Name</label><input class="finput" id="ef-name" type="text"></div>
+    <div class="field"><label class="flabel">Barcode</label><input class="finput" id="ef-barcode" type="text" inputmode="numeric" placeholder="EAN / UPC"></div>
     <div class="fsec">Per 100g / serving</div>
     <div class="row2">
       <div class="field"><label class="flabel">Reference size</label><input class="finput" id="ef-refsize" type="number" inputmode="decimal" placeholder="100"></div>
@@ -1514,15 +1561,27 @@ const SUPABASE_FOODS = 'nutriscan_foods';
 var MEALS       = ['breakfast','lunch','dinner','snacks'];
 var MEAL_LABELS = {breakfast:'Breakfast',lunch:'Lunch',dinner:'Dinner',snacks:'Snacks'};
 
-var currentDate = isoToday();
+var knownToday  = isoToday();
+var currentDate = knownToday;
 
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+function localISOFromDate(d) {
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+}
 function isoToday() {
-  return new Date().toISOString().slice(0,10);
+  return localISOFromDate(new Date());
 }
 function shiftDate(iso, n) {
-  var d = new Date(iso + 'T12:00:00');
+  var parts = String(iso || isoToday()).split('-').map(Number);
+  var d = new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1, 12, 0, 0);
   d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0,10);
+  return localISOFromDate(d);
+}
+function localDateFromISO(iso) {
+  var parts = String(iso || isoToday()).split('-').map(Number);
+  return new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1, 12, 0, 0);
 }
 
 // ─────────────────────────────────────────────
@@ -1544,6 +1603,37 @@ function mkState() {
 }
 function saveState(s) {
   localStorage.setItem('ns3', JSON.stringify(s));
+}
+function getSupabaseConfig() {
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem('ns3_supabase') || '{}') || {}; }
+  catch(e) { saved = {}; }
+  var url = (saved.url || (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '') || '').trim();
+  url = url.replace(/\/+$/, '');
+  return {
+    url: url,
+    key: (saved.key || (typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : '') || '').trim(),
+    logsTable: (saved.logsTable || (typeof SUPABASE_TABLE !== 'undefined' ? SUPABASE_TABLE : '') || 'nutriscan_logs').trim(),
+    foodsTable: (saved.foodsTable || (typeof SUPABASE_FOODS !== 'undefined' ? SUPABASE_FOODS : '') || 'nutriscan_foods').trim()
+  };
+}
+function saveSupabaseConfig(cfg) {
+  localStorage.setItem('ns3_supabase', JSON.stringify(cfg));
+}
+function hasSupabaseConfig(cfg) {
+  cfg = cfg || getSupabaseConfig();
+  return !!(cfg.url && cfg.key && cfg.logsTable && cfg.foodsTable);
+}
+function supabaseRestUrl(cfg, table, query) {
+  return cfg.url + '/rest/v1/' + encodeURIComponent(table) + (query || '');
+}
+function supabaseHeaders(cfg, extra) {
+  var headers = {
+    'apikey': cfg.key,
+    'Authorization': 'Bearer ' + cfg.key
+  };
+  Object.keys(extra || {}).forEach(function(k){ headers[k] = extra[k]; });
+  return headers;
 }
 function getDay(date) {
   var s = getState();
@@ -1813,7 +1903,7 @@ function renderToday() {
 
   // date label
   var today = isoToday();
-  var d     = new Date(currentDate + 'T12:00:00');
+  var d     = localDateFromISO(currentDate);
   document.getElementById('date-label').textContent =
     currentDate === today                ? 'Today'
     : currentDate === shiftDate(today,-1) ? 'Yesterday'
@@ -1920,7 +2010,7 @@ function renderDiary() {
         }
       }
     }
-    var d   = new Date(key + 'T12:00:00');
+    var d   = localDateFromISO(key);
     var lbl = i===0 ? 'Today'
       : i===1 ? 'Yesterday'
       : d.toLocaleDateString('en',{weekday:'short',month:'short',day:'numeric'});
@@ -2054,7 +2144,7 @@ function submitAdd() {
       sodium:  parseFloat(document.getElementById('add-sodium-ref').value) || entry.sodium
     };
     upsertToLibrary(libEntry);
-    if (typeof SUPABASE_URL !== 'undefined' && SUPABASE_URL && SUPABASE_KEY) {
+    if (hasSupabaseConfig()) {
       syncLibrary().catch(function(){});
     }
   }
@@ -2325,6 +2415,24 @@ function setScanMode(mode) {
 //  - bcReader.reset() fully releases camera on stop
 //  - bcActive guard prevents double-fire from ZXing callback
 // ══════════════════════════════════════════════════════════════════════
+function createBarcodeHints() {
+  var hints = null;
+  try {
+    hints = new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+      ZXing.BarcodeFormat.EAN_13,
+      ZXing.BarcodeFormat.EAN_8,
+      ZXing.BarcodeFormat.UPC_A,
+      ZXing.BarcodeFormat.UPC_E,
+      ZXing.BarcodeFormat.CODE_128,
+      ZXing.BarcodeFormat.CODE_39,
+      ZXing.BarcodeFormat.ITF
+    ].filter(Boolean));
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+  } catch(eh) { hints = null; }
+  return hints;
+}
+
 async function startBarcodeScanner() {
   var statusEl = document.getElementById('bc-status-wrap');
 
@@ -2359,20 +2467,7 @@ async function startBarcodeScanner() {
 
   // Always create a FRESH reader — never reuse after reset().
   // Limit formats to retail barcodes for faster, more stable detection.
-  var hints = null;
-  try {
-    hints = new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-      ZXing.BarcodeFormat.EAN_13,
-      ZXing.BarcodeFormat.EAN_8,
-      ZXing.BarcodeFormat.UPC_A,
-      ZXing.BarcodeFormat.UPC_E,
-      ZXing.BarcodeFormat.CODE_128,
-      ZXing.BarcodeFormat.CODE_39,
-      ZXing.BarcodeFormat.ITF
-    ].filter(Boolean));
-    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-  } catch(eh) { hints = null; }
+  var hints = createBarcodeHints();
   bcReader = new ZXing.BrowserMultiFormatReader(hints, 180);
   bcActive = true;
 
@@ -2482,6 +2577,22 @@ function barcodeVariants(code) {
   return out.filter(function(v, i, arr){ return arr.indexOf(v) === i; });
 }
 
+function cleanBarcodeForStorage(value) {
+  var code = normalizeBarcode(value);
+  return isLikelyRetailBarcode(code) ? code : '';
+}
+
+function lookupManualBarcode() {
+  var input = document.getElementById('manual-barcode');
+  var code = normalizeBarcode(input ? input.value : '');
+  if (!isLikelyRetailBarcode(code)) {
+    showToast('Enter a valid EAN or UPC barcode');
+    return;
+  }
+  stopBarcode();
+  fetchProduct(code);
+}
+
 function updateBarcodeCameraControls() {
   var vid = document.getElementById('bc-video');
   var tb = document.getElementById('torch-btn-bc');
@@ -2554,6 +2665,8 @@ async function fetchProduct(barcode) {
     statusEl.innerHTML = '<div class="ocr-st err">That scan did not look like a valid retail barcode. Try again with the whole EAN/UPC in frame.</div>';
     return;
   }
+  var manualBarcodeEl = document.getElementById('manual-barcode');
+  if (manualBarcodeEl) manualBarcodeEl.value = cleanBarcode;
   statusEl.innerHTML = '<div class="ocr-st loading"><div class="spin"></div>Looking up ' + esc(cleanBarcode) + ' in Dutch supermarket data…</div>';
 
   // ── helper: fetch with timeout ──────────────────────────────────────
@@ -2581,8 +2694,21 @@ async function fetchProduct(barcode) {
     if (!p) return null;
     var nm = p.nutriments || {};
 
-    // Product name — try EN first, then generic, then abbreviated
-    var name  = (p.product_name_en || p.product_name || p.abbreviated_product_name || '').trim();
+    // Product name — try EN/NL fields first and avoid Arabic-script fallbacks
+    var nameCandidates = [
+      p.product_name_en, p.product_name_nl,
+      p.generic_name_en, p.generic_name_nl,
+      p.product_name, p.generic_name,
+      p.abbreviated_product_name
+    ];
+    var name = '';
+    for (var ni=0; ni<nameCandidates.length; ni++) {
+      var candidate = String(nameCandidates[ni] || '').trim();
+      if (candidate && !/[\u0600-\u06FF]/.test(candidate)) {
+        name = candidate;
+        break;
+      }
+    }
     if (!name) name = 'Product ' + cleanBarcode;
     var brand = (p.brands || '').split(',')[0].trim();
     var storesText = [p.stores, p.stores_tags, p.brands_tags, p.countries_tags].join(' ').toLowerCase();
@@ -2636,6 +2762,7 @@ async function fetchProduct(barcode) {
       brand:      brand,
       store:      preferredStore,
       source:     sourceLabel || 'Open Food Facts',
+      barcode:    cleanBarcode,
       refSize:    refSize,        // always 100 — reference is per 100g
       labelServing: labelServing, // the labelled serving (e.g. 30g) — used as "my serving" default
       unit:       unit,
@@ -2648,9 +2775,33 @@ async function fetchProduct(barcode) {
     };
   }
 
+  function parseLibraryProduct(food) {
+    if (!food) return null;
+    var refSize = parseFloat(food.refsize) || 100;
+    return {
+      name: food.name || ('Product ' + cleanBarcode),
+      brand: '',
+      store: '',
+      source: 'Your library',
+      barcode: cleanBarcode,
+      refSize: refSize,
+      labelServing: refSize,
+      unit: food.unit || 'g',
+      cal: rnd(food.cal || 0),
+      prot: rnd(food.prot || 0),
+      carbs: rnd(food.carbs || 0),
+      fat: rnd(food.fat || 0),
+      fiber: rnd(food.fiber || 0),
+      sod: rnd(food.sodium || 0),
+      _score: 220
+    };
+  }
+
   var result = null;
   var candidates = [];
-  var offFields = 'product_name,product_name_en,abbreviated_product_name,brands,brands_tags,stores,stores_tags,countries_tags,nutriments,serving_size,serving_quantity,serving_quantity_unit';
+  var offFields = 'product_name,product_name_en,product_name_nl,generic_name,generic_name_en,generic_name_nl,abbreviated_product_name,brands,brands_tags,stores,stores_tags,countries_tags,nutriments,serving_size,serving_quantity,serving_quantity_unit';
+  var cachedProduct = parseLibraryProduct(findLibraryFoodByBarcode(cleanBarcode));
+  if (cachedProduct) candidates.push(cachedProduct);
 
   async function tryOFFProduct(host, code, label, timeout) {
     try {
@@ -2703,20 +2854,23 @@ async function fetchProduct(barcode) {
     }
   }
 
-  var variants = barcodeVariants(cleanBarcode);
-  for (var vi = 0; vi < variants.length; vi++) {
-    await tryOFFProduct('nl.openfoodfacts.org', variants[vi], 'Open Food Facts NL', 7500);
-    await tryOFFProduct('world.openfoodfacts.org', variants[vi], 'Open Food Facts', 7500);
-    await tryOFFSearch(variants[vi], 5500);
+  if (!cachedProduct) {
+    var variants = barcodeVariants(cleanBarcode);
+    for (var vi = 0; vi < variants.length; vi++) {
+      await tryOFFProduct('nl.openfoodfacts.org', variants[vi], 'Open Food Facts NL', 7500);
+      await tryOFFProduct('world.openfoodfacts.org', variants[vi], 'Open Food Facts', 7500);
+      await tryOFFSearch(variants[vi], 5500);
+    }
+    var hasPreferredStore = candidates.some(function(c){ return c && (c.store === 'Albert Heijn' || c.store === 'Lidl'); });
+    if (!hasPreferredStore) await tryPreferredStoreSearch(cleanBarcode);
   }
-  var hasPreferredStore = candidates.some(function(c){ return c && (c.store === 'Albert Heijn' || c.store === 'Lidl'); });
-  if (!hasPreferredStore) await tryPreferredStoreSearch(cleanBarcode);
 
   candidates = candidates.filter(Boolean);
   if (candidates.length) {
     candidates.sort(function(a, b) {
       function score(x) {
-        var s = 0;
+        var s = x._score || 0;
+        if (x.source === 'Your library') s += 200;
         if (x.store === 'Albert Heijn' || x.store === 'Lidl') s += 80;
         if (x.source === 'Open Food Facts NL') s += 30;
         if (x.cal > 0 || x.prot > 0 || x.carbs > 0 || x.fat > 0) s += 20;
@@ -2744,6 +2898,7 @@ async function fetchProduct(barcode) {
             brand: item.brand || '',
             store: '',
             source: 'UPC Item DB',
+            barcode: cleanBarcode,
             refSize: 100, labelServing: 100, unit: 'g',
             cal:0, prot:0, carbs:0, fat:0, fiber:0, sod:0,
             noNutrition: true
@@ -2807,14 +2962,17 @@ async function fetchProduct(barcode) {
         'Barcode <strong>' + esc(cleanBarcode) + '</strong> was not found in the Dutch/global product databases. ' +
         'Enter values manually below from the package label.' +
       '</div>';
+    ['scan-serving','scan-cal','scan-prot','scan-carbs','scan-fat','scan-fiber','scan-sodium','scan-my-serving'].forEach(function(id){ setF(id, ''); });
     setF('scan-name', 'Product ' + cleanBarcode);
+    setF('scan-serving', 100);
+    setF('scan-my-serving', 100);
     document.getElementById('scan-fields').style.display = 'block';
   }
 }
 
 
 function rnd(v)    { return Math.round((+v||0)*100)/100; }
-function setF(id,v){ var el=document.getElementById(id); if(el&&v!=null&&v!=='') el.value=v; }
+function setF(id,v){ var el=document.getElementById(id); if(el) el.value = (v == null ? '' : v); }
 
 
 
@@ -2828,6 +2986,156 @@ function setF(id,v){ var el=document.getElementById(id); if(el&&v!=null&&v!=='')
 
 
 // ── Upload ────────────────────────────────────────────────────────────
+var nativeBarcodeDetectorPromise = null;
+
+async function getNativeBarcodeDetector() {
+  if (typeof window === 'undefined' || !('BarcodeDetector' in window)) return null;
+  if (nativeBarcodeDetectorPromise) return nativeBarcodeDetectorPromise;
+  nativeBarcodeDetectorPromise = (async function() {
+    var Detector = window.BarcodeDetector;
+    var requested = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf'];
+    var formats = requested;
+    try {
+      if (Detector.getSupportedFormats) {
+        var supported = await Detector.getSupportedFormats();
+        formats = requested.filter(function(fmt){ return supported.indexOf(fmt) !== -1; });
+      }
+      if (!formats.length) return null;
+      return new Detector({formats: formats});
+    } catch(e) {
+      return null;
+    }
+  })();
+  return nativeBarcodeDetectorPromise;
+}
+
+async function decodeBarcodeNative(src) {
+  var detector = await getNativeBarcodeDetector();
+  if (!detector) return '';
+  var img = await loadImageElement(src);
+  var found = await detector.detect(img);
+  if (found && found.length) return found[0].rawValue || '';
+  return '';
+}
+
+function loadImageElement(src) {
+  return new Promise(function(resolve, reject) {
+    var img = new Image();
+    img.onload = function(){ resolve(img); };
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+function makeBarcodePhotoVariants(src) {
+  return loadImageElement(src).then(function(img) {
+    var variants = [src];
+    var maxSide = 1800;
+    var scale = Math.min(1, maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+    var w = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+    var h = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+
+    function drawVariant(rotation, contrast, binary, invert) {
+      var rot = rotation || 0;
+      var cw = Math.abs(rot) === 90 ? h : w;
+      var ch = Math.abs(rot) === 90 ? w : h;
+      var canvas = document.createElement('canvas');
+      canvas.width = cw;
+      canvas.height = ch;
+      var ctx = canvas.getContext('2d', {willReadFrequently:true});
+      ctx.save();
+      if (rot === 90) {
+        ctx.translate(cw, 0);
+        ctx.rotate(Math.PI / 2);
+      } else if (rot === -90) {
+        ctx.translate(0, ch);
+        ctx.rotate(-Math.PI / 2);
+      } else if (rot === 180) {
+        ctx.translate(cw, ch);
+        ctx.rotate(Math.PI);
+      }
+      ctx.drawImage(img, 0, 0, w, h);
+      ctx.restore();
+
+      if (contrast || binary || invert) {
+        var imageData = ctx.getImageData(0, 0, cw, ch);
+        var data = imageData.data;
+        var c = contrast || 80;
+        var factor = (259 * (c + 255)) / (255 * (259 - c));
+        for (var i=0; i<data.length; i+=4) {
+          var lum = data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114;
+          var v = binary ? (lum > 138 ? 255 : 0) : Math.max(0, Math.min(255, factor * (lum - 128) + 128));
+          if (invert) v = 255 - v;
+          data[i] = data[i+1] = data[i+2] = v;
+        }
+        ctx.putImageData(imageData, 0, 0);
+      }
+      return canvas.toDataURL('image/png');
+    }
+
+    variants.push(drawVariant(0, 0, false));
+    variants.push(drawVariant(0, 95, false));
+    variants.push(drawVariant(0, 125, false));
+    variants.push(drawVariant(0, 0, true));
+    variants.push(drawVariant(0, 0, true, true));
+    variants.push(drawVariant(90, 95, false));
+    variants.push(drawVariant(-90, 95, false));
+    variants.push(drawVariant(90, 0, true));
+    variants.push(drawVariant(-90, 0, true));
+    variants.push(drawVariant(180, 95, false));
+    return variants.filter(function(v, i, arr){ return arr.indexOf(v) === i; });
+  });
+}
+
+async function decodeBarcodeImageSrc(src) {
+  try {
+    var nativeText = await decodeBarcodeNative(src);
+    if (nativeText) return nativeText;
+  } catch(nativeErr) {}
+
+  var reader = new ZXing.BrowserMultiFormatReader(createBarcodeHints(), 120);
+  var img = await loadImageElement(src);
+  img.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;';
+  document.body.appendChild(img);
+  try {
+    var result = await reader.decodeFromImageElement(img);
+    return result && result.getText ? result.getText() : String(result || '');
+  } finally {
+    try { reader.reset(); } catch(e) {}
+    if (img.parentNode) img.parentNode.removeChild(img);
+  }
+}
+
+async function decodeBarcodeFromUpload() {
+  if (!uploadedB64) { showToast('Choose a photo first'); return; }
+  if (typeof ZXing === 'undefined') {
+    setOcrStatus('err', 'Barcode scanner did not load — check your connection and reload');
+    return;
+  }
+  setOcrStatus('loading', 'Scanning photo for barcode…');
+  try {
+    var variants = await makeBarcodePhotoVariants(uploadedB64);
+    for (var i=0; i<variants.length; i++) {
+      try {
+        var raw = await decodeBarcodeImageSrc(variants[i]);
+        var code = normalizeBarcode(raw);
+        if (isLikelyRetailBarcode(code)) {
+          if (navigator.vibrate) navigator.vibrate(60);
+          setOcrStatus('ok', 'Barcode found: ' + esc(code));
+          var input = document.getElementById('manual-barcode');
+          if (input) input.value = code;
+          setScanMode('barcode');
+          fetchProduct(code);
+          return;
+        }
+      } catch(decodeErr) {}
+    }
+    setOcrStatus('err', 'No barcode found in that photo. Try a clearer barcode crop or enter the number manually.');
+  } catch(e) {
+    setOcrStatus('err', 'Could not read that photo: ' + esc(e.message || e));
+  }
+}
+
 function handleUpload(e) {
   var file = e.target.files[0];
   if (!file) return;
@@ -2864,6 +3172,9 @@ function setOcrStatus(type, msg) {
 // ── Submit / Reset ────────────────────────────────────────────────────
 function submitScan() {
   var name   = document.getElementById('scan-name').value.trim() || 'Scanned item';
+  var scannedBarcode = cleanBarcodeForStorage(
+    (document.getElementById('manual-barcode') || {}).value || lastBarcode
+  );
 
   var refSize   = parseFloat(document.getElementById('scan-serving').value)    || 0;
   var myServing = parseFloat(document.getElementById('scan-my-serving').value) || 0;
@@ -2881,6 +3192,7 @@ function submitScan() {
     fat:scaled.fat, fiber:scaled.fiber, sodium:scaled.sodium,
     serving:scaled.serving, unit:scaled.unit, scanned:true, ts:Date.now()
   };
+  if (scannedBarcode) entry.barcode = scannedBarcode;
 
   // Auto-save scanned food to library (reference values from label fields)
   var refSrv = parseFloat(document.getElementById('scan-serving').value) || 100;
@@ -2895,9 +3207,10 @@ function submitScan() {
     fiber:   parseFloat(document.getElementById('scan-fiber').value)  || 0,
     sodium:  parseFloat(document.getElementById('scan-sodium').value) || 0
   };
+  if (scannedBarcode) libFood.barcode = scannedBarcode;
   if (libFood.cal > 0 || libFood.prot > 0) {
     upsertToLibrary(libFood);
-    if (SUPABASE_URL && SUPABASE_KEY) syncLibrary().catch(function(){});
+    if (hasSupabaseConfig()) syncLibrary().catch(function(){});
   }
 
   logEntry(document.getElementById('scan-meal').value, entry);
@@ -2918,6 +3231,16 @@ function resetScan() {
   if (prev) prev.style.display = 'none';
   var msEl = document.getElementById('scan-my-serving');
   if (msEl) delete msEl.dataset.touched;
+  ['scan-name','scan-serving','scan-cal','scan-prot','scan-carbs','scan-fat','scan-fiber','scan-sodium','scan-my-serving'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  var spEl = document.getElementById('scan-portions');
+  if (spEl) spEl.value = '1';
+  var suEl = document.getElementById('scan-unit');
+  if (suEl) suEl.value = 'g';
+  var mbEl = document.getElementById('manual-barcode');
+  if (mbEl) mbEl.value = '';
   resetAutoCalc('scan');
   var uploadZone = document.getElementById('upload-zone');
   if (uploadZone) { var fi = uploadZone.querySelector('input[type=file]'); if (fi) fi.value = ''; }
@@ -2967,13 +3290,14 @@ function closeScanSheet() {
 //  SUPABASE SYNC
 // ─────────────────────────────────────────────
 function syncAuto() {
-  if (SUPABASE_URL && SUPABASE_KEY) {
+  if (hasSupabaseConfig()) {
     syncNow().catch(function() {});
   }
 }
 async function syncNow() {
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    showToast('Add Supabase URL and key at top of file');
+  var cfg = getSupabaseConfig();
+  if (!hasSupabaseConfig(cfg)) {
+    showToast('Add Supabase URL and key in Settings');
     return;
   }
   var s    = getState();
@@ -2990,6 +3314,7 @@ async function syncNow() {
           date:   date,
           meal:   meal,
           name:   item.name    || '',
+          barcode: cleanBarcodeForStorage(item.barcode || ''),
           cal:    item.cal     || 0,
           prot:   item.prot    || 0,
           carbs:  item.carbs   || 0,
@@ -3014,29 +3339,25 @@ async function syncNow() {
   try {
     // Supabase upsert: POST with Prefer: resolution=merge-duplicates
     // Requires table to have primary key "id" (text)
-    var res = await fetch(SUPABASE_URL + '/rest/v1/' + SUPABASE_TABLE, {
+    var res = await fetch(supabaseRestUrl(cfg, cfg.logsTable), {
       method: 'POST',
-      headers: {
+      headers: supabaseHeaders(cfg, {
         'Content-Type':  'application/json',
-        'apikey':        SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
         'Prefer':        'return=minimal,resolution=merge-duplicates'
-      },
+      }),
       body: JSON.stringify(rows)
     });
     
     if (res.status === 401) throw new Error('Invalid API key');
-    if (res.status === 404) throw new Error('Table "' + SUPABASE_TABLE + '" not found — create it first');
+    if (res.status === 404) throw new Error('Table "' + cfg.logsTable + '" not found — create it first');
     if (res.status === 409) {
       // conflict — table may lack unique constraint on id, try without merge
-      var res2 = await fetch(SUPABASE_URL + '/rest/v1/' + SUPABASE_TABLE, {
+      var res2 = await fetch(supabaseRestUrl(cfg, cfg.logsTable), {
         method: 'POST',
-        headers: {
+        headers: supabaseHeaders(cfg, {
           'Content-Type':  'application/json',
-          'apikey':        SUPABASE_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_KEY,
           'Prefer':        'return=minimal'
-        },
+        }),
         body: JSON.stringify(rows)
       });
       if (!res2.ok) throw new Error('HTTP ' + res2.status + ' — check table has id as primary key');
@@ -3092,9 +3413,82 @@ function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 function updateSyncStatus() {
-  document.getElementById('sync-status').textContent = SUPABASE_URL
-    ? 'Connected: ' + SUPABASE_URL.replace('https://','').split('.')[0]
-    : 'Not configured — add URL and key at the top of the file.';
+  var cfg = getSupabaseConfig();
+  var urlEl = document.getElementById('sb-url');
+  var keyEl = document.getElementById('sb-key');
+  var logsEl = document.getElementById('sb-table-logs');
+  var foodsEl = document.getElementById('sb-table-foods');
+  if (urlEl) urlEl.value = cfg.url;
+  if (keyEl) keyEl.value = cfg.key;
+  if (logsEl) logsEl.value = cfg.logsTable;
+  if (foodsEl) foodsEl.value = cfg.foodsTable;
+  document.getElementById('sync-status').textContent = hasSupabaseConfig(cfg)
+    ? 'Connected: ' + cfg.url.replace(/^https?:\/\//,'').split('.')[0] + ' · logs: ' + cfg.logsTable + ' · foods: ' + cfg.foodsTable
+    : 'Not configured — paste your Supabase URL and anon key here.';
+}
+
+function readSupabaseSettingsForm() {
+  return {
+    url: (document.getElementById('sb-url').value || '').trim().replace(/\/+$/, ''),
+    key: (document.getElementById('sb-key').value || '').trim(),
+    logsTable: (document.getElementById('sb-table-logs').value || 'nutriscan_logs').trim(),
+    foodsTable: (document.getElementById('sb-table-foods').value || 'nutriscan_foods').trim()
+  };
+}
+
+function validateSupabaseSettings(cfg) {
+  if (!cfg.url || !cfg.key) {
+    showToast('Enter Supabase URL and anon key');
+    return false;
+  }
+  if (!/^https:\/\/[^/]+\.supabase\.co$/.test(cfg.url)) {
+    showToast('Use your https://...supabase.co project URL');
+    return false;
+  }
+  if (!cfg.logsTable || !cfg.foodsTable) {
+    showToast('Enter both Supabase table names');
+    return false;
+  }
+  return true;
+}
+
+function saveSupabaseSettings() {
+  var cfg = readSupabaseSettingsForm();
+  if (!validateSupabaseSettings(cfg)) return;
+  saveSupabaseConfig(cfg);
+  updateSyncStatus();
+  showToast('Supabase connection saved');
+}
+
+async function testSupabaseConnection() {
+  var cfg = readSupabaseSettingsForm();
+  if (!validateSupabaseSettings(cfg)) return;
+  var statusEl = document.getElementById('sync-status');
+  if (statusEl) statusEl.textContent = 'Testing Supabase connection…';
+
+  async function testTable(table) {
+    var res = await fetch(supabaseRestUrl(cfg, table, '?select=id&limit=1'), {
+      headers: supabaseHeaders(cfg)
+    });
+    if (res.status === 401 || res.status === 403) throw new Error('Invalid or restricted anon key');
+    if (res.status === 404) throw new Error('Table "' + table + '" not found');
+    if (!res.ok) {
+      var text = await res.text().catch(function(){ return ''; });
+      throw new Error('HTTP ' + res.status + (text ? ': ' + text.slice(0, 120) : ''));
+    }
+  }
+
+  try {
+    await testTable(cfg.logsTable);
+    await testTable(cfg.foodsTable);
+    saveSupabaseConfig(cfg);
+    updateSyncStatus();
+    if (statusEl) statusEl.textContent = 'Connection OK · logs: ' + cfg.logsTable + ' · foods: ' + cfg.foodsTable;
+    showToast('Supabase connection works');
+  } catch(e) {
+    if (statusEl) statusEl.textContent = 'Connection failed: ' + (e.message || e);
+    showToast('Supabase test failed');
+  }
 }
 function exportJSON() {
   var blob = new Blob([JSON.stringify(getState(), null, 2)], {type:'application/json'});
@@ -3160,7 +3554,7 @@ function renderWeekly() {
         });
       });
     }
-    var d    = new Date(key + 'T12:00:00');
+    var d    = localDateFromISO(key);
     var isT  = key === today;
     var short = isT ? 'Today'
       : d.toLocaleDateString('en',{weekday:'short'});
@@ -3302,6 +3696,127 @@ function getLibrary() {
 function saveLibrary(foods) {
   localStorage.setItem('ns3_foods', JSON.stringify(foods));
 }
+function findLibraryFoodByBarcode(barcode) {
+  var code = cleanBarcodeForStorage(barcode);
+  if (!code) return null;
+  var variants = barcodeVariants(code);
+  var lib = getLibrary();
+  for (var i = 0; i < lib.length; i++) {
+    var saved = cleanBarcodeForStorage(lib[i].barcode);
+    if (saved && variants.indexOf(saved) !== -1) return lib[i];
+  }
+  return null;
+}
+
+// A compact fallback database for whole/common foods that product-barcode
+// databases often miss. Values are approximate per 100g unless noted.
+var COMMON_FOODS = [
+  {name:'Banana',aliases:['bananas','banaan','bananen'],cal:89,prot:1.1,carbs:22.8,fat:0.3,fiber:2.6,sodium:1},
+  {name:'Apple',aliases:['apples','appel','appels'],cal:52,prot:0.3,carbs:13.8,fat:0.2,fiber:2.4,sodium:1},
+  {name:'Pear',aliases:['pears','peer','peren'],cal:57,prot:0.4,carbs:15.2,fat:0.1,fiber:3.1,sodium:1},
+  {name:'Orange',aliases:['oranges','sinaasappel','sinaasappels'],cal:47,prot:0.9,carbs:11.8,fat:0.1,fiber:2.4,sodium:0},
+  {name:'Kiwi',aliases:['kiwis'],cal:61,prot:1.1,carbs:14.7,fat:0.5,fiber:3,sodium:3},
+  {name:'Strawberries',aliases:['strawberry'],cal:32,prot:0.7,carbs:7.7,fat:0.3,fiber:2,sodium:1},
+  {name:'Blueberries',aliases:['blueberry'],cal:57,prot:0.7,carbs:14.5,fat:0.3,fiber:2.4,sodium:1},
+  {name:'Grapes',aliases:['grape'],cal:69,prot:0.7,carbs:18.1,fat:0.2,fiber:0.9,sodium:2},
+  {name:'Avocado',aliases:['avocados'],cal:160,prot:2,carbs:8.5,fat:14.7,fiber:6.7,sodium:7},
+  {name:'Tomato',aliases:['tomatoes','tomaat','tomaten'],cal:18,prot:0.9,carbs:3.9,fat:0.2,fiber:1.2,sodium:5},
+  {name:'Cucumber',aliases:['cucumbers','komkommer'],cal:15,prot:0.7,carbs:3.6,fat:0.1,fiber:0.5,sodium:2},
+  {name:'Carrot',aliases:['carrots','wortel','wortels'],cal:41,prot:0.9,carbs:9.6,fat:0.2,fiber:2.8,sodium:69},
+  {name:'Onion',aliases:['onions','ui','uien'],cal:40,prot:1.1,carbs:9.3,fat:0.1,fiber:1.7,sodium:4},
+  {name:'Bell pepper',aliases:['pepper','paprika'],cal:31,prot:1,carbs:6,fat:0.3,fiber:2.1,sodium:4},
+  {name:'Zucchini',aliases:['courgette'],cal:17,prot:1.2,carbs:3.1,fat:0.3,fiber:1,sodium:8},
+  {name:'Potato, boiled',aliases:['boiled potato','potatoes','aardappel','aardappelen'],cal:87,prot:1.9,carbs:20.1,fat:0.1,fiber:1.8,sodium:4},
+  {name:'Sweet potato, baked',aliases:['sweet potatoes'],cal:90,prot:2,carbs:20.7,fat:0.2,fiber:3.3,sodium:36},
+  {name:'Broccoli, cooked',aliases:['broccoli'],cal:35,prot:2.4,carbs:7.2,fat:0.4,fiber:3.3,sodium:41},
+  {name:'Cauliflower, cooked',aliases:['cauliflower','bloemkool'],cal:23,prot:1.8,carbs:4.1,fat:0.5,fiber:2.3,sodium:15},
+  {name:'Spinach, raw',aliases:['spinach'],cal:23,prot:2.9,carbs:3.6,fat:0.4,fiber:2.2,sodium:79},
+  {name:'Mushrooms',aliases:['mushroom'],cal:22,prot:3.1,carbs:3.3,fat:0.3,fiber:1,sodium:5},
+  {name:'White rice, cooked',aliases:['rice','cooked rice','rijst'],cal:130,prot:2.7,carbs:28.2,fat:0.3,fiber:0.4,sodium:1},
+  {name:'Brown rice, cooked',aliases:['brown rice'],cal:123,prot:2.7,carbs:25.6,fat:1,fiber:1.6,sodium:4},
+  {name:'Pasta, cooked',aliases:['spaghetti cooked','macaroni cooked'],cal:158,prot:5.8,carbs:30.9,fat:0.9,fiber:1.8,sodium:1},
+  {name:'Noodles, cooked',aliases:['noodles','mie'],cal:138,prot:4.5,carbs:25, fat:2.1,fiber:1.2,sodium:5},
+  {name:'Quinoa, cooked',aliases:['quinoa'],cal:120,prot:4.4,carbs:21.3,fat:1.9,fiber:2.8,sodium:7},
+  {name:'Couscous, cooked',aliases:['couscous'],cal:112,prot:3.8,carbs:23.2,fat:0.2,fiber:1.4,sodium:5},
+  {name:'Oats, dry',aliases:['oatmeal dry','rolled oats'],cal:389,prot:16.9,carbs:66.3,fat:6.9,fiber:10.6,sodium:2},
+  {name:'Bread, whole wheat',aliases:['whole wheat bread','brown bread','volkoren brood'],cal:247,prot:13,carbs:41, fat:4.2,fiber:7,sodium:400},
+  {name:'Bread, white',aliases:['white bread','wit brood'],cal:265,prot:9,carbs:49, fat:3.2,fiber:2.7,sodium:491},
+  {name:'Tortilla wrap',aliases:['wrap','tortilla'],cal:310,prot:8.5,carbs:50,fat:8.5,fiber:3,sodium:650},
+  {name:'Egg, whole',aliases:['eggs','boiled egg','fried egg','ei','eieren'],cal:143,prot:12.6,carbs:0.7,fat:9.5,fiber:0,sodium:142},
+  {name:'Chicken breast, cooked',aliases:['chicken','chicken breast','kip','kipfilet'],cal:165,prot:31,carbs:0,fat:3.6,fiber:0,sodium:74},
+  {name:'Chicken thigh, cooked',aliases:['chicken thigh'],cal:209,prot:26,carbs:0,fat:10.9,fiber:0,sodium:95},
+  {name:'Turkey breast, cooked',aliases:['turkey'],cal:135,prot:30,carbs:0,fat:1,fiber:0,sodium:55},
+  {name:'Lean beef, cooked',aliases:['beef','steak'],cal:217,prot:26.1,carbs:0,fat:11.8,fiber:0,sodium:72},
+  {name:'Ground beef, cooked',aliases:['beef mince','minced beef','gehakt'],cal:250,prot:26,carbs:0,fat:15,fiber:0,sodium:72},
+  {name:'Pork loin, cooked',aliases:['pork'],cal:242,prot:27.3,carbs:0,fat:13.9,fiber:0,sodium:62},
+  {name:'Ham',aliases:['ham slices','achterham'],cal:145,prot:21,carbs:1.5,fat:5.5,fiber:0,sodium:1200},
+  {name:'Salmon, cooked',aliases:['salmon','zalm'],cal:206,prot:22.1,carbs:0,fat:12.4,fiber:0,sodium:59},
+  {name:'Tuna, canned in water',aliases:['tuna'],cal:116,prot:25.5,carbs:0,fat:0.8,fiber:0,sodium:338},
+  {name:'Cod, cooked',aliases:['cod fish','cod'],cal:105,prot:22.8,carbs:0,fat:0.9,fiber:0,sodium:78},
+  {name:'Mackerel, smoked',aliases:['mackerel','makreel'],cal:305,prot:18.5,carbs:0,fat:25.1,fiber:0,sodium:445},
+  {name:'Shrimp, cooked',aliases:['prawns','shrimp'],cal:99,prot:24,carbs:0.2,fat:0.3,fiber:0,sodium:111},
+  {name:'Mussels, cooked',aliases:['mussels','mosselen'],cal:172,prot:24,carbs:7.4,fat:4.5,fiber:0,sodium:369},
+  {name:'Lobster, cooked',aliases:['lobsters','lobster','kreeft'],cal:89,prot:19,carbs:0,fat:0.9,fiber:0,sodium:486},
+  {name:'Greek yogurt, plain',aliases:['greek yoghurt','plain greek yogurt'],cal:97,prot:9,carbs:3.6,fat:5,fiber:0,sodium:36},
+  {name:'Yogurt, plain low-fat',aliases:['yoghurt','plain yogurt'],cal:63,prot:5.3,carbs:7, fat:1.6,fiber:0,sodium:70},
+  {name:'Skyr, plain',aliases:['skyr'],cal:63,prot:11,carbs:4,fat:0.2,fiber:0,sodium:40},
+  {name:'Quark, low-fat',aliases:['kwark','magere kwark'],cal:56,prot:10,carbs:3.9,fat:0.2,fiber:0,sodium:45},
+  {name:'Milk, semi-skimmed',aliases:['milk','halfvolle melk'],cal:47,prot:3.5,carbs:4.8,fat:1.6,fiber:0,sodium:44},
+  {name:'Cottage cheese',aliases:['cottage cheese'],cal:98,prot:11.1,carbs:3.4,fat:4.3,fiber:0,sodium:364},
+  {name:'Gouda cheese',aliases:['cheese','kaas','gouda'],cal:356,prot:25,carbs:2.2,fat:27.4,fiber:0,sodium:819},
+  {name:'Cheddar cheese',aliases:['cheddar'],cal:403,prot:24.9,carbs:1.3,fat:33.1,fiber:0,sodium:621},
+  {name:'Mozzarella',aliases:['mozzarella cheese'],cal:280,prot:28,carbs:3.1,fat:17.1,fiber:0,sodium:627},
+  {name:'Butter',aliases:['roomboter'],cal:717,prot:0.9,carbs:0.1,fat:81.1,fiber:0,sodium:11},
+  {name:'Olive oil',aliases:['extra virgin olive oil','olijfolie'],cal:884,prot:0,carbs:0,fat:100,fiber:0,sodium:2},
+  {name:'Peanut butter',aliases:['pindakaas'],cal:588,prot:25.1,carbs:20, fat:50, fiber:6,sodium:459},
+  {name:'Almonds',aliases:['almond'],cal:579,prot:21.2,carbs:21.6,fat:49.9,fiber:12.5,sodium:1},
+  {name:'Walnuts',aliases:['walnut'],cal:654,prot:15.2,carbs:13.7,fat:65.2,fiber:6.7,sodium:2},
+  {name:'Lentils, cooked',aliases:['lentils'],cal:116,prot:9,carbs:20.1,fat:0.4,fiber:7.9,sodium:2},
+  {name:'Chickpeas, cooked',aliases:['chickpeas','garbanzo beans'],cal:164,prot:8.9,carbs:27.4,fat:2.6,fiber:7.6,sodium:7},
+  {name:'Black beans, cooked',aliases:['black beans'],cal:132,prot:8.9,carbs:23.7,fat:0.5,fiber:8.7,sodium:1},
+  {name:'Tofu, firm',aliases:['tofu'],cal:144,prot:17.3,carbs:2.8,fat:8.7,fiber:2.3,sodium:14},
+  {name:'Hummus',aliases:['houmous'],cal:166,prot:7.9,carbs:14.3,fat:9.6,fiber:6,sodium:379},
+  {name:'Dark chocolate',aliases:['chocolate','pure chocolade'],cal:598,prot:7.8,carbs:45.9,fat:42.6,fiber:10.9,sodium:20},
+  {name:'Protein powder, whey',aliases:['whey protein','protein powder'],cal:400,prot:80,carbs:8,fat:6,fiber:0,sodium:250}
+].map(function(food, i) {
+  food.id = 'common_' + i;
+  food.refsize = 100;
+  food.unit = 'g';
+  food.source = 'Common food';
+  return food;
+});
+
+function normalizeSearchText(value) {
+  return String(value || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+function searchCommonFoods(query, existing) {
+  var q = normalizeSearchText(query);
+  if (!q) return [];
+  var existingNames = {};
+  (existing || []).forEach(function(f){ existingNames[normalizeSearchText(f.name)] = true; });
+  return COMMON_FOODS.map(function(food) {
+    var terms = [food.name].concat(food.aliases || []).map(normalizeSearchText);
+    var best = 0;
+    terms.forEach(function(term) {
+      if (term === q) best = Math.max(best, 100);
+      else if (term.indexOf(q) !== -1) best = Math.max(best, 80);
+      else if (q.indexOf(term) !== -1) best = Math.max(best, 70);
+      else {
+        var bits = q.split(' ').filter(Boolean);
+        var all = bits.length && bits.every(function(bit){ return term.indexOf(bit) !== -1; });
+        if (all) best = Math.max(best, 60);
+      }
+    });
+    return {food:food, score:best};
+  }).filter(function(hit) {
+    return hit.score > 0 && !existingNames[normalizeSearchText(hit.food.name)];
+  }).sort(function(a,b){ return b.score - a.score || a.food.name.localeCompare(b.food.name); })
+    .slice(0, 8)
+    .map(function(hit){ return Object.assign({}, hit.food); });
+}
 
 // ── Generate a stable ID for a food (timestamp-based) ──
 function foodId() {
@@ -3313,15 +3828,22 @@ function foodId() {
 // Otherwise → add new entry
 function upsertToLibrary(food) {
   var lib   = getLibrary();
-  var norm  = food.name.trim().toLowerCase();
+  var norm  = normalizeSearchText(food.name);
+  var barcode = cleanBarcodeForStorage(food.barcode);
+  var hasBarcodeProp = Object.prototype.hasOwnProperty.call(food, 'barcode');
   var idx   = -1;
   for (var i=0; i<lib.length; i++) {
-    if (lib[i].name.trim().toLowerCase() === norm) { idx=i; break; }
+    var libBarcode = cleanBarcodeForStorage(lib[i].barcode);
+    if ((barcode && libBarcode === barcode) || normalizeSearchText(lib[i].name) === norm) { idx=i; break; }
   }
+  if (barcode) food.barcode = barcode;
+  else if (hasBarcodeProp) food.barcode = '';
+  else if (idx >= 0 && lib[idx].barcode) food.barcode = lib[idx].barcode;
   food.updated_at = Date.now();
+  if (idx >= 0 && !food.id) food.id = lib[idx].id;
   if (!food.id) food.id = foodId();
   if (idx >= 0) {
-    lib[idx] = food;  // update existing
+    lib[idx] = Object.assign({}, lib[idx], food);  // update existing, keep old metadata
   } else {
     lib.push(food);   // add new
   }
@@ -3338,13 +3860,14 @@ function deleteLibraryFood(id) {
   closeSheet('sh-editfood');
   renderLibrary(document.getElementById('lib-filter') ? document.getElementById('lib-filter').value : '');
   showToast('Removed from library');
-  if (SUPABASE_URL && SUPABASE_KEY) deleteLibraryFoodRemote(id).catch(function(){});
+  if (hasSupabaseConfig()) deleteLibraryFoodRemote(id).catch(function(){});
 }
 
 async function deleteLibraryFoodRemote(id) {
-  await fetch(SUPABASE_URL + '/rest/v1/' + SUPABASE_FOODS + '?id=eq.' + encodeURIComponent(id), {
+  var cfg = getSupabaseConfig();
+  await fetch(supabaseRestUrl(cfg, cfg.foodsTable, '?id=eq.' + encodeURIComponent(id)), {
     method: 'DELETE',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    headers: supabaseHeaders(cfg)
   });
 }
 
@@ -3363,7 +3886,16 @@ function searchLibrary(query) {
   if (!q) { resultsEl.classList.remove('show'); resultsEl.innerHTML=''; return; }
 
   var lib  = getLibrary();
-  var hits = lib.filter(function(f){ return f.name.toLowerCase().indexOf(q) !== -1; }).slice(0,8);
+  var normQ = normalizeSearchText(q);
+  if (!normQ && !/\d{6,}/.test(q)) { resultsEl.classList.remove('show'); resultsEl.innerHTML=''; return; }
+  var qBarcode = normalizeBarcode(q);
+  var hits = lib.filter(function(f){
+    var nameHit = normQ && normalizeSearchText(f.name).indexOf(normQ) !== -1;
+    var barcodeHit = qBarcode.length >= 6 && String(f.barcode || '').indexOf(qBarcode) !== -1;
+    return nameHit || barcodeHit;
+  }).slice(0,8);
+  var commonHits = searchCommonFoods(q, hits).slice(0, Math.max(0, 8 - hits.length));
+  hits = hits.concat(commonHits);
 
   renderLocalResults(resultsEl, hits, q);
 
@@ -3384,8 +3916,9 @@ function renderLocalResults(resultsEl, hits, q, webHits, webLoading) {
     html += hits.map(function(f) {
       var macros   = 'P '+(f.prot||0)+'g &middot; C '+(f.carbs||0)+'g &middot; F '+(f.fat||0)+'g';
       var perLabel = f.refsize ? ' / '+ f.refsize + (f.unit||'g') : '';
+      var badge = f.source === 'Common food' ? 'Common' : 'Your library';
       return '<div class="food-result-item" data-kind="local" data-id="'+esc(f.id)+'">' +
-        '<div><div class="fri-name">'+esc(f.name)+'<span class="fri-source-badge">Your library</span></div>' +
+        '<div><div class="fri-name">'+esc(f.name)+'<span class="fri-source-badge">'+esc(badge)+'</span></div>' +
         '<div class="fri-macros">'+(f.cal||0)+' kcal &middot; '+macros+perLabel+'</div></div>' +
       '</div>';
     }).join('');
@@ -3460,68 +3993,155 @@ async function searchFoodOnline(query, mySeq, localHits) {
   }
 
   var results = [];
+  var offFields = [
+    'product_name','product_name_en','product_name_nl',
+    'generic_name','generic_name_en','generic_name_nl',
+    'brands','stores','stores_tags','countries_tags','languages_tags',
+    'nutriments','serving_quantity','serving_quantity_unit'
+  ].join(',');
 
-  // ── 1. Open Food Facts v2 search — primary, most reliable, no key needed
-  try {
-    var u1 = 'https://world.openfoodfacts.org/api/v2/search?categories_tags_en=&fields=product_name,brands,nutriments,serving_quantity&search_terms=' +
-      encodeURIComponent(query) + '&page_size=6&json=1';
-    var r1 = await fetchWithTimeout(u1, 8000);
-    if (r1.ok) {
-      var d1 = await safeJson(r1);
-      if (d1 && Array.isArray(d1.products)) {
-        d1.products.forEach(function(p) {
-          var nm  = p.nutriments || {};
-          var calP = nm['energy-kcal_100g'] || (nm['energy_100g'] ? nm['energy_100g']/4.184 : 0);
-          var name = (p.product_name || '').trim();
-          if (name && (calP > 0 || (nm['proteins_100g']||0) > 0)) {
-            results.push({
-              name:    name + (p.brands ? ' (' + p.brands.split(',')[0].trim() + ')' : ''),
-              source:  'Open Food Facts',
-              refsize: 100, unit:'g',
-              cal:    rnd(calP),
-              prot:   rnd(nm['proteins_100g']      || 0),
-              carbs:  rnd(nm['carbohydrates_100g'] || 0),
-              fat:    rnd(nm['fat_100g']           || 0),
-              fiber:  rnd(nm['fiber_100g']          || 0),
-              sodium: rnd((nm['sodium_100g']        || 0) * 1000)
-            });
-          }
+  function searchTermsFor(term) {
+    var raw = String(term || '').trim();
+    var terms = raw ? [raw] : [];
+    var norm = normalizeSearchText(raw);
+    if (norm.length > 3 && /s$/.test(norm)) terms.push(norm.replace(/s$/, ''));
+    if (/ies$/.test(norm)) terms.push(norm.replace(/ies$/, 'y'));
+    return terms.filter(function(t, i, arr) {
+      return t && arr.indexOf(t) === i;
+    }).slice(0, 3);
+  }
+
+  function hasArabicScript(text) {
+    return /[\u0600-\u06FF]/.test(String(text || ''));
+  }
+  function pickOFFName(p) {
+    var names = [
+      p.product_name_en, p.product_name_nl,
+      p.generic_name_en, p.generic_name_nl,
+      p.product_name, p.generic_name
+    ];
+    for (var i=0; i<names.length; i++) {
+      var n = String(names[i] || '').trim();
+      if (n && !hasArabicScript(n)) return n;
+    }
+    return '';
+  }
+  function offNutriment(nm, keys) {
+    for (var i=0; i<keys.length; i++) {
+      var v = nm[keys[i]];
+      if (v !== undefined && v !== null && v !== '' && !isNaN(v)) return Number(v);
+    }
+    return 0;
+  }
+  function parseOFFSearchProduct(p, source) {
+    var nm = p.nutriments || {};
+    var baseName = pickOFFName(p);
+    if (!baseName) return null;
+    var searchable = normalizeSearchText(baseName + ' ' + (p.brands || ''));
+    var qNorm = normalizeSearchText(query);
+    if (qNorm && searchable.indexOf(qNorm.split(' ')[0]) === -1 && qNorm.indexOf(searchable) === -1) return null;
+
+    var calPer100 = offNutriment(nm, ['energy-kcal_100g','energy-kcal']);
+    if (!calPer100 && nm['energy_100g']) calPer100 = Number(nm['energy_100g']) / 4.184;
+    var prot = offNutriment(nm, ['proteins_100g','proteins','protein_100g','protein']);
+    var carbs = offNutriment(nm, ['carbohydrates_100g','carbohydrates','carbohydrate_100g','carbohydrate']);
+    var fat = offNutriment(nm, ['fat_100g','fat','lipids_100g','lipids']);
+    if (!(calPer100 > 0 || prot > 0 || carbs > 0 || fat > 0)) return null;
+
+    var brand = (p.brands || '').split(',')[0].trim();
+    var storeText = [p.stores, p.stores_tags, p.brands, p.countries_tags].join(' ').toLowerCase();
+    var store = /albert[-_\s]?heijn|\bah\b/.test(storeText) ? 'Albert Heijn'
+      : /lidl/.test(storeText) ? 'Lidl'
+      : '';
+    var unit = p.serving_quantity_unit === 'ml' ? 'ml' : 'g';
+    var score = 0;
+    if (source.indexOf('NL') !== -1 || /netherlands|nederland|nl/.test(storeText)) score += 30;
+    if (store) score += 50;
+    if (normalizeSearchText(baseName) === qNorm) score += 35;
+    if (normalizeSearchText(baseName).indexOf(qNorm) !== -1) score += 20;
+    if (brand) score += 5;
+
+    return {
+      name: baseName + (brand ? ' (' + brand + ')' : ''),
+      source: store ? store : source,
+      refsize: 100,
+      unit: unit,
+      cal: rnd(calPer100),
+      prot: rnd(prot),
+      carbs: rnd(carbs),
+      fat: rnd(fat),
+      fiber: rnd(offNutriment(nm, ['fiber_100g','fiber','fibers_100g','fibers'])),
+      sodium: rnd(offNutriment(nm, ['sodium_100g','sodium']) * 1000),
+      _score: score
+    };
+  }
+  async function tryOFFTextSearch(host, term, source) {
+    try {
+      var url = 'https://' + host + '/cgi/search.pl?search_terms=' + encodeURIComponent(term) +
+        '&search_simple=1&action=process&json=1&page_size=10&lc=en&fields=' + encodeURIComponent(offFields);
+      var res = await fetchWithTimeout(url, 7500);
+      if (!res.ok) return;
+      var data = await safeJson(res);
+      if (data && Array.isArray(data.products)) {
+        data.products.forEach(function(p) {
+          var parsed = parseOFFSearchProduct(p, source);
+          if (parsed) results.push(parsed);
         });
       }
-    }
-  } catch(e1) { /* try next source */ }
-
-  // ── 2. Open Food Facts cgi search — backup for branded items ─────────
-  if (results.length < 5) {
+    } catch(e) {}
+  }
+  async function tryUSDAFoodData(term) {
     try {
-      var u2 = 'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' +
-        encodeURIComponent(query) +
-        '&search_simple=1&action=process&json=1&page_size=6&fields=product_name,brands,nutriments,serving_quantity';
-      var r2 = await fetchWithTimeout(u2, 7000);
-      if (r2.ok) {
-        var d2 = await safeJson(r2);
-        if (d2 && Array.isArray(d2.products)) {
-          d2.products.forEach(function(p) {
-            var nm = p.nutriments || {};
-            var calPer100 = nm['energy-kcal_100g'] || (nm['energy_100g'] ? nm['energy_100g']/4.184 : 0);
-            var name = (p.product_name || '').trim();
-            if (name && (calPer100 > 0 || nm['proteins_100g'] > 0)) {
-              results.push({
-                name:    name + (p.brands ? ' (' + p.brands.split(',')[0].trim() + ')' : ''),
-                source:  'Open Food Facts',
-                refsize: 100, unit:'g',
-                cal:    rnd(calPer100),
-                prot:   rnd(nm['proteins_100g']      || 0),
-                carbs:  rnd(nm['carbohydrates_100g'] || 0),
-                fat:    rnd(nm['fat_100g']           || 0),
-                fiber:  rnd(nm['fiber_100g']          || 0),
-                sodium: rnd((nm['sodium_100g']        || 0) * 1000)
-              });
-            }
-          });
+      var url = 'https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&pageSize=6&dataType=Foundation,SR%20Legacy,Survey%20(FNDDS)&query=' + encodeURIComponent(term);
+      var res = await fetchWithTimeout(url, 7500);
+      if (!res.ok) return;
+      var data = await safeJson(res);
+      if (!data || !Array.isArray(data.foods)) return;
+      data.foods.forEach(function(food) {
+        var nutrients = {};
+        function keep(key, value) {
+          if (value > 0 && (nutrients[key] === undefined || nutrients[key] === 0)) nutrients[key] = value;
         }
-      }
-    } catch(e2) { /* OFF failed/timed out — fall through with whatever we have */ }
+        (food.foodNutrients || []).forEach(function(n) {
+          var nutrientName = (n.nutrientName || '').toLowerCase();
+          var unitName = String(n.unitName || '').toUpperCase();
+          var value = Number(n.value) || 0;
+          if (nutrientName === 'energy' && unitName === 'KCAL') keep('cal', value);
+          else if (nutrientName === 'energy' && !nutrients.cal && unitName === 'KJ') keep('cal', value / 4.184);
+          else if (nutrientName === 'protein') keep('prot', value);
+          else if (nutrientName === 'carbohydrate, by difference') keep('carbs', value);
+          else if (nutrientName === 'total lipid (fat)') keep('fat', value);
+          else if (nutrientName === 'fiber, total dietary') keep('fiber', value);
+          else if (nutrientName === 'sodium, na') keep('sodium', value);
+        });
+        var name = String(food.description || '').toLowerCase().replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+        if (!name || hasArabicScript(name)) return;
+        if (!(nutrients.cal > 0 || nutrients.prot > 0 || nutrients.carbs > 0 || nutrients.fat > 0)) return;
+        results.push({
+          name: name,
+          source: 'USDA',
+          refsize: 100, unit:'g',
+          cal: rnd(nutrients.cal || 0),
+          prot: rnd(nutrients.prot || 0),
+          carbs: rnd(nutrients.carbs || 0),
+          fat: rnd(nutrients.fat || 0),
+          fiber: rnd(nutrients.fiber || 0),
+          sodium: rnd(nutrients.sodium || 0),
+          _score: 10
+        });
+      });
+    } catch(e) {}
+  }
+
+  var searchTerms = searchTermsFor(query);
+  for (var sti = 0; sti < searchTerms.length && results.length < 6; sti++) {
+    await tryOFFTextSearch('nl.openfoodfacts.org', searchTerms[sti], 'Open Food Facts NL');
+  }
+  for (var stw = 0; stw < searchTerms.length && results.length < 5; stw++) {
+    await tryOFFTextSearch('world.openfoodfacts.org', searchTerms[stw], 'Open Food Facts');
+  }
+  for (var stu = 0; stu < searchTerms.length && results.length < 4; stu++) {
+    await tryUSDAFoodData(searchTerms[stu]);
   }
 
   // Discard stale results if the user kept typing and a newer search started
@@ -3530,8 +4150,9 @@ async function searchFoodOnline(query, mySeq, localHits) {
   // De-duplicate near-identical names, cap at 6
   var seen = {};
   var deduped = [];
+  results.sort(function(a,b){ return (b._score || 0) - (a._score || 0); });
   results.forEach(function(r) {
-    var key = r.name.toLowerCase().slice(0, 30);
+    var key = normalizeSearchText(r.name).slice(0, 45);
     if (!seen[key]) { seen[key] = true; deduped.push(r); }
   });
   deduped = deduped.slice(0, 6);
@@ -3586,7 +4207,7 @@ function fillFromWebResult(food) {
     fiber:   food.fiber  || 0,
     sodium:  food.sodium || 0
   });
-  if (typeof SUPABASE_URL !== 'undefined' && SUPABASE_URL && SUPABASE_KEY) {
+  if (hasSupabaseConfig()) {
     syncLibrary().catch(function(){});
   }
 }
@@ -3692,6 +4313,7 @@ function openEditFood(id) {
   if (!food) return;
   document.getElementById('ef-id').value    = food.id;
   document.getElementById('ef-name').value  = food.name;
+  document.getElementById('ef-barcode').value = food.barcode || '';
   document.getElementById('ef-refsize').value= food.refsize||100;
   document.getElementById('ef-unit').value  = food.unit||'g';
   document.getElementById('ef-cal').value   = food.cal||'';
@@ -3710,6 +4332,7 @@ function saveEditedFood() {
   if (!name) { showToast('Enter a food name'); return; }
   var food = {
     id:      id || foodId(),
+    barcode: cleanBarcodeForStorage(document.getElementById('ef-barcode').value),
     name:    name,
     refsize: parseFloat(document.getElementById('ef-refsize').value) || 100,
     unit:    document.getElementById('ef-unit').value,
@@ -3725,30 +4348,45 @@ function saveEditedFood() {
   closeSheet('sh-editfood');
   renderLibrary(document.getElementById('lib-filter') ? document.getElementById('lib-filter').value : '');
   showToast('Saved');
-  if (SUPABASE_URL && SUPABASE_KEY) syncLibrary().catch(function(){});
+  if (hasSupabaseConfig()) syncLibrary().catch(function(){});
 }
 
 // ── Sync library to Supabase ───────────────────────────
 async function syncLibrary() {
   var statusEl = document.getElementById('lib-sync-status');
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
+  var cfg = getSupabaseConfig();
+  if (!hasSupabaseConfig(cfg)) {
     if (statusEl) statusEl.textContent = 'Supabase not configured';
     showToast('Supabase not configured');
     return;
   }
   var lib = getLibrary();
   if (!lib.length) { showToast('Library is empty'); return; }
+  var rows = lib.map(function(f) {
+    return {
+      id: f.id || foodId(),
+      barcode: cleanBarcodeForStorage(f.barcode || ''),
+      name: f.name || '',
+      refsize: parseFloat(f.refsize) || 100,
+      unit: f.unit || 'g',
+      cal: parseFloat(f.cal) || 0,
+      prot: parseFloat(f.prot) || 0,
+      carbs: parseFloat(f.carbs) || 0,
+      fat: parseFloat(f.fat) || 0,
+      fiber: parseFloat(f.fiber) || 0,
+      sodium: parseFloat(f.sodium) || 0,
+      updated_at: f.updated_at || Date.now()
+    };
+  });
   if (statusEl) statusEl.textContent = 'Syncing ' + lib.length + ' foods…';
   try {
-    var res = await fetch(SUPABASE_URL + '/rest/v1/' + SUPABASE_FOODS, {
+    var res = await fetch(supabaseRestUrl(cfg, cfg.foodsTable), {
       method: 'POST',
-      headers: {
+      headers: supabaseHeaders(cfg, {
         'Content-Type': 'application/json',
-        'apikey':        SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
         'Prefer':        'return=minimal,resolution=merge-duplicates'
-      },
-      body: JSON.stringify(lib)
+      }),
+      body: JSON.stringify(rows)
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     if (statusEl) statusEl.textContent = 'Synced ' + lib.length + ' foods · ' + new Date().toLocaleTimeString();
@@ -3762,11 +4400,12 @@ async function syncLibrary() {
 // ── Pull library from Supabase (merge with local) ──────
 async function importLibraryFromSupabase() {
   var statusEl = document.getElementById('lib-sync-status');
-  if (!SUPABASE_URL || !SUPABASE_KEY) { showToast('Supabase not configured'); return; }
+  var cfg = getSupabaseConfig();
+  if (!hasSupabaseConfig(cfg)) { showToast('Supabase not configured'); return; }
   if (statusEl) statusEl.textContent = 'Pulling from cloud…';
   try {
-    var res = await fetch(SUPABASE_URL + '/rest/v1/' + SUPABASE_FOODS + '?select=*&order=name.asc', {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    var res = await fetch(supabaseRestUrl(cfg, cfg.foodsTable, '?select=*&order=name.asc'), {
+      headers: supabaseHeaders(cfg)
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var remote = await res.json();
@@ -3777,6 +4416,7 @@ async function importLibraryFromSupabase() {
     var merged = {};
     local.forEach(function(f){ merged[f.id] = f; });
     remote.forEach(function(f) {
+      f.barcode = cleanBarcodeForStorage(f.barcode || '');
       if (!merged[f.id] || (f.updated_at||0) >= (merged[f.id].updated_at||0)) {
         merged[f.id] = f;
       }
@@ -3916,6 +4556,7 @@ function saveEditedEntry() {
     serving: document.getElementById('ee-serving').value || '',
     unit:    document.getElementById('ee-unit').value,
     ts:      orig.ts || Date.now(),
+    barcode: orig.barcode || '',
     scanned: orig.scanned || false
   };
   saveDay(currentDate, day);
@@ -3951,27 +4592,43 @@ document.addEventListener('click', function(e) {
 // the calorie ring/remaining resets to zero for the fresh day.
 function scheduleMidnightReset() {
   var now  = new Date();
+  var previousToday = knownToday;
   var msUntilMidnight =
-    new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5)
-    - now; // 5-second buffer past midnight
+    new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 2)
+    - now; // 2-second buffer past local midnight
   setTimeout(function() {
-    var newToday = isoToday();
-    if (currentDate === shiftDate(newToday, -1) || currentDate !== newToday) {
-      // User was viewing "today" — snap forward to the new day
-      currentDate = newToday;
-      if (document.getElementById('page-today') &&
-          document.getElementById('page-today').classList.contains('active')) {
-        renderToday();
-      }
-    }
-    scheduleMidnightReset(); // re-schedule for the next midnight
+    refreshLocalDay(previousToday);
+    scheduleMidnightReset();
   }, msUntilMidnight);
 }
+
+function refreshLocalDay(previousToday) {
+  var newToday = isoToday();
+  var oldToday = previousToday || knownToday;
+  if (newToday === oldToday) return;
+  if (currentDate === oldToday) currentDate = newToday;
+  knownToday = newToday;
+  if (document.getElementById('page-today') &&
+      document.getElementById('page-today').classList.contains('active')) {
+    renderToday();
+    if (currentView === 'weekly') renderWeekly();
+  }
+  if (document.getElementById('page-diary') &&
+      document.getElementById('page-diary').classList.contains('active')) {
+    renderDiary();
+  }
+}
+
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) refreshLocalDay();
+});
+window.addEventListener('focus', function() { refreshLocalDay(); });
 
 // ─── init ───────────────────────────────────
 // Close library dropdown on outside click
 
 renderToday();
+scheduleMidnightReset();
 </script>
 </body>
 </html>
