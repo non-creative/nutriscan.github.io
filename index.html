@@ -453,34 +453,6 @@ body{
 }
 .sheet-body{flex:1;overflow-y:auto;padding:4px 22px 36px;}
 
-/* ── in-app confirm dialog (replaces native confirm()) ── */
-.confirm-modal{
-  position:fixed;top:50%;left:0;right:0;
-  transform:translateY(-50%);
-  margin:0 auto;max-width:300px;width:calc(100% - 56px);
-  z-index:300;
-  background:var(--surface);
-  border-radius:var(--r-l);
-  padding:22px 20px 18px;
-  box-shadow:var(--sh3);
-  opacity:0;pointer-events:none;
-  transition:opacity .18s var(--ease);
-}
-.confirm-modal.open{opacity:1;pointer-events:all;}
-.confirm-title{font-size:16px;font-weight:700;color:var(--on-surf);margin-bottom:6px;}
-.confirm-msg{font-size:13.5px;color:var(--on-surf2);line-height:1.5;margin-bottom:18px;}
-.confirm-actions{display:flex;gap:8px;justify-content:flex-end;}
-.confirm-actions button{
-  border:none;background:none;cursor:pointer;
-  font-family:inherit;font-size:13.5px;font-weight:700;
-  padding:9px 14px;border-radius:var(--r);
-  color:var(--on-surf2);
-}
-.confirm-actions button:hover{background:var(--surf2);}
-.confirm-actions .confirm-danger{color:var(--error);}
-#sc-confirm{z-index:290;}
-
-
 /* ━━━━━━━━━━ FORMS ━━━━━━━━━━ */
 .field{margin-bottom:14px;}
 .flabel{
@@ -1494,10 +1466,7 @@ const SUPABASE_FOODS = 'nutriscan_foods';
           <div style="display:flex;gap:8px;margin-top:4px;">
             <button class="btn-s" style="flex:1;margin-top:0;padding:10px 6px;font-size:12.5px;" onclick="saveSupabaseSettings()">Save</button>
             <button class="btn-s" style="flex:1;margin-top:0;padding:10px 6px;font-size:12.5px;" onclick="testSupabaseConnection()">Test</button>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:8px;">
             <button class="btn-p" style="flex:1;margin-top:0;padding:10px 6px;font-size:12.5px;" onclick="syncNow()">Sync now</button>
-            <button class="btn-s" style="flex:1;margin-top:0;padding:10px 6px;font-size:12.5px;" onclick="pullFromCloud()">Pull from cloud</button>
           </div>
           <div id="sb-sql-help" style="background:var(--surf2);border-radius:var(--r);padding:12px 14px;margin-top:12px;font-size:12px;color:var(--on-surf2);line-height:1.6;">
             <strong style="color:var(--on-surf);display:block;margin-bottom:4px;">Supabase table SQL</strong>
@@ -1573,9 +1542,11 @@ create policy "anon full access" on nutriscan_foods
       <input class="food-search" id="lib-filter" type="text" placeholder="Search foods…" oninput="renderLibrary(this.value)">
     </div>
     <div id="lib-list" style="flex:1;overflow-y:auto;padding-bottom:16px"></div>
-    <div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--outline2);padding-bottom:20px">
-      <button class="btn-s" style="width:100%;margin-top:0" onclick="closeSheet('sh-library'); openSheet('sh-settings');">Manage cloud sync in Settings</button>
+    <div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--outline2);display:flex;gap:8px;padding-bottom:20px">
+      <button class="btn-s" style="flex:1;margin-top:0" onclick="syncLibrary()">Sync to cloud</button>
+      <button class="btn-s" style="flex:1;margin-top:0" onclick="importLibraryFromSupabase()">Pull from cloud</button>
     </div>
+    <div id="lib-sync-status" style="font-size:12px;color:var(--on-surf3);text-align:center;margin-top:4px;margin-bottom:12px"></div>
   </div>
 </div>
 
@@ -1656,16 +1627,6 @@ create policy "anon full access" on nutriscan_foods
 <canvas id="capture-canvas"></canvas>
 <div class="toast" id="toast"></div>
 
-<div class="scrim" id="sc-confirm" onclick="closeConfirmModal()"></div>
-<div class="confirm-modal" id="confirm-modal">
-  <div class="confirm-title" id="confirm-title"></div>
-  <div class="confirm-msg" id="confirm-msg"></div>
-  <div class="confirm-actions">
-    <button onclick="closeConfirmModal()">Cancel</button>
-    <button class="confirm-danger" id="confirm-ok-btn" onclick="confirmModalOk()">Confirm</button>
-  </div>
-</div>
-
 <script>
 // ─────────────────────────────────────────────
 //  CONSTANTS & STATE
@@ -1716,34 +1677,6 @@ function mkState() {
 function saveState(s) {
   localStorage.setItem('ns3', JSON.stringify(s));
 }
-// ── Deletion tombstones — log entry ids removed locally that still
-//    need to be deleted on Supabase next time we sync ──
-function getDeletedLogIds() {
-  try {
-    var raw = localStorage.getItem('ns3_deleted_log_ids');
-    var arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch(e) { return []; }
-}
-function addDeletedLogId(id) {
-  if (!id) return;
-  var ids = getDeletedLogIds();
-  if (ids.indexOf(id) === -1) ids.push(id);
-  localStorage.setItem('ns3_deleted_log_ids', JSON.stringify(ids));
-}
-function clearDeletedLogIds(idsToRemove) {
-  var remaining = getDeletedLogIds().filter(function(id) { return idsToRemove.indexOf(id) === -1; });
-  localStorage.setItem('ns3_deleted_log_ids', JSON.stringify(remaining));
-}
-function formatRelativeTime(ms) {
-  var diff = Date.now() - (ms || 0);
-  if (!ms || diff < 0) return '';
-  if (diff < 5000) return 'just now';
-  if (diff < 60000) return Math.floor(diff / 1000) + 's ago';
-  if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
-  if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
-  return Math.floor(diff / 86400000) + 'd ago';
-}
 function getSupabaseConfig() {
   var saved = {};
   try { saved = JSON.parse(localStorage.getItem('ns3_supabase') || '{}') || {}; }
@@ -1781,17 +1714,7 @@ function updateSettingsSyncDot(ok) {
   if (accDot) accDot.classList.toggle('synced', synced);
 
   var badge = document.getElementById('acc-sync-badge');
-  if (badge) {
-    if (!configured) {
-      badge.textContent = 'Not connected';
-    } else if (synced) {
-      var lastSync = parseInt(localStorage.getItem('ns3_last_synced_at') || '0', 10);
-      var rel = formatRelativeTime(lastSync);
-      badge.textContent = rel ? ('Synced ' + rel) : 'Connected';
-    } else {
-      badge.textContent = 'Needs attention';
-    }
-  }
+  if (badge) badge.textContent = !configured ? 'Not connected' : (synced ? 'Connected' : 'Needs attention');
 
   var section = document.getElementById('acc-sync');
   if (section) section.classList.toggle('open', !synced);
@@ -2402,15 +2325,10 @@ function logEntry(meal, entry) {
 }
 function delItem(meal, idx) {
   var day = getDay(currentDate);
-  var removed = (day.meals[meal] || [])[idx];
   day.meals[meal].splice(idx, 1);
   saveDay(currentDate, day);
   renderToday();
   showToast('Removed');
-  if (removed && removed.ts) {
-    addDeletedLogId(String(removed.ts));
-    syncAuto();
-  }
 }
 
 
@@ -3562,9 +3480,12 @@ function syncAuto() {
     syncNow().catch(function() {});
   }
 }
-
-// ── LOGS: push local entries (upsert) ──
-async function pushLogRows(cfg) {
+async function syncNow() {
+  var cfg = getSupabaseConfig();
+  if (!hasSupabaseConfig(cfg)) {
+    showToast('Add Supabase URL and key in Settings');
+    return;
+  }
   var s    = getState();
   var rows = [];
   var days = s.days || {};
@@ -3573,7 +3494,8 @@ async function pushLogRows(cfg) {
     if (!day || !day.meals) return;
     MEALS.forEach(function(meal) {
       (day.meals[meal] || []).forEach(function(item) {
-        rows.push({
+        // stable row id = ts (unique per entry), plus all fields
+        var row = {
           id:     String(item.ts || Date.now()),
           date:   date,
           meal:   meal,
@@ -3590,183 +3512,54 @@ async function pushLogRows(cfg) {
           unit:   item.unit    || 'g',
           scanned:item.scanned ? true : false,
           ts:     item.ts      || 0
-        });
+        };
+        rows.push(row);
       });
     });
   });
-  if (!rows.length) return 0;
-
-  // Supabase upsert: POST with Prefer: resolution=merge-duplicates
-  // Requires table to have primary key "id" (text)
-  var res = await fetch(supabaseRestUrl(cfg, cfg.logsTable), {
-    method: 'POST',
-    headers: supabaseHeaders(cfg, {
-      'Content-Type':  'application/json',
-      'Prefer':        'return=minimal,resolution=merge-duplicates'
-    }),
-    body: JSON.stringify(rows)
-  });
-
-  if (res.status === 401) throw new Error('Invalid API key');
-  if (res.status === 404) throw new Error('Table "' + cfg.logsTable + '" not found — create it first');
-  if (res.status === 409) {
-    // conflict — table may lack unique constraint on id, try without merge
-    var res2 = await fetch(supabaseRestUrl(cfg, cfg.logsTable), {
+  if (!rows.length) { showToast('Nothing to sync yet'); return; }
+  
+  var el = document.getElementById('sync-status');
+  if (el) el.textContent = 'Syncing ' + rows.length + ' entries…';
+  
+  try {
+    // Supabase upsert: POST with Prefer: resolution=merge-duplicates
+    // Requires table to have primary key "id" (text)
+    var res = await fetch(supabaseRestUrl(cfg, cfg.logsTable), {
       method: 'POST',
       headers: supabaseHeaders(cfg, {
         'Content-Type':  'application/json',
-        'Prefer':        'return=minimal'
+        'Prefer':        'return=minimal,resolution=merge-duplicates'
       }),
       body: JSON.stringify(rows)
     });
-    if (!res2.ok) throw new Error('HTTP ' + res2.status + ' — check table has id as primary key');
-  } else if (!res.ok) {
-    var errText = await res.text().catch(function(){return '';});
-    throw new Error('HTTP ' + res.status + (errText ? ': ' + errText.slice(0,100) : ''));
-  }
-  return rows.length;
-}
-
-// ── LOGS: push pending deletions, clearing tombstones that succeed ──
-async function pushDeletedLogRows(cfg) {
-  var ids = getDeletedLogIds();
-  if (!ids.length) return 0;
-  var succeeded = [];
-  for (var i = 0; i < ids.length; i++) {
-    var id = ids[i];
-    try {
-      var res = await fetch(supabaseRestUrl(cfg, cfg.logsTable, '?id=eq.' + encodeURIComponent(id)), {
-        method: 'DELETE',
-        headers: supabaseHeaders(cfg, {'Prefer': 'return=minimal'})
+    
+    if (res.status === 401) throw new Error('Invalid API key');
+    if (res.status === 404) throw new Error('Table "' + cfg.logsTable + '" not found — create it first');
+    if (res.status === 409) {
+      // conflict — table may lack unique constraint on id, try without merge
+      var res2 = await fetch(supabaseRestUrl(cfg, cfg.logsTable), {
+        method: 'POST',
+        headers: supabaseHeaders(cfg, {
+          'Content-Type':  'application/json',
+          'Prefer':        'return=minimal'
+        }),
+        body: JSON.stringify(rows)
       });
-      if (res.status === 404) throw new Error('Table "' + cfg.logsTable + '" not found — create it first');
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      succeeded.push(id);
-    } catch(e) {
-      // stop early on a real error; leave remaining tombstones queued for next sync
-      clearDeletedLogIds(succeeded);
-      throw e;
+      if (!res2.ok) throw new Error('HTTP ' + res2.status + ' — check table has id as primary key');
+    } else if (!res.ok) {
+      var errText = await res.text().catch(function(){return '';});
+      throw new Error('HTTP ' + res.status + (errText ? ': ' + errText.slice(0,100) : ''));
     }
-  }
-  clearDeletedLogIds(succeeded);
-  return succeeded.length;
-}
-
-// ── LOGS: pull remote rows not already present locally (additive merge — never overwrites local edits) ──
-async function pullLogRows(cfg) {
-  var res = await fetch(supabaseRestUrl(cfg, cfg.logsTable, '?select=*'), {
-    headers: supabaseHeaders(cfg)
-  });
-  if (res.status === 404) throw new Error('Table "' + cfg.logsTable + '" not found — create it first');
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  var remote = await res.json();
-  if (!Array.isArray(remote)) throw new Error('Invalid response');
-
-  var s = getState();
-  if (!s.days) s.days = {};
-  var localIds = {};
-  Object.keys(s.days).forEach(function(date) {
-    var day = s.days[date];
-    if (!day || !day.meals) return;
-    MEALS.forEach(function(meal) {
-      (day.meals[meal] || []).forEach(function(item) {
-        if (item.ts) localIds[String(item.ts)] = true;
-      });
-    });
-  });
-  var tombstoned = {};
-  getDeletedLogIds().forEach(function(id) { tombstoned[id] = true; });
-
-  var added = 0;
-  remote.forEach(function(row) {
-    var id = String(row.id || row.ts || '');
-    if (!id || localIds[id] || tombstoned[id]) return;
-    if (!row.date || !row.meal || MEALS.indexOf(row.meal) === -1) return;
-    if (!s.days[row.date]) s.days[row.date] = {meals:{breakfast:[],lunch:[],dinner:[],snacks:[]}};
-    if (!s.days[row.date].meals[row.meal]) s.days[row.date].meals[row.meal] = [];
-    s.days[row.date].meals[row.meal].push({
-      name:    row.name    || '',
-      barcode: row.barcode || '',
-      cal:     row.cal     || 0,
-      prot:    row.prot    || 0,
-      carbs:   row.carbs   || 0,
-      fat:     row.fat     || 0,
-      fiber:   row.fiber   || 0,
-      sugar:   row.sugar   || 0,
-      sodium:  row.sodium  || 0,
-      serving: row.serving || '',
-      unit:    row.unit    || 'g',
-      scanned: !!row.scanned,
-      ts:      row.ts || Number(id) || Date.now()
-    });
-    localIds[id] = true;
-    added++;
-  });
-  if (added) saveState(s);
-  return added;
-}
-
-// ── Unified "Sync now" — push deletions, logs, and library in one go ──
-async function syncNow() {
-  var cfg = getSupabaseConfig();
-  if (!hasSupabaseConfig(cfg)) {
-    showToast('Add Supabase URL and key in Settings');
-    return;
-  }
-  var el = document.getElementById('sync-status');
-  if (el) el.textContent = 'Syncing…';
-  try {
-    var deletedCount = await pushDeletedLogRows(cfg);
-    var logCount     = await pushLogRows(cfg);
-    var foodCount    = await pushLibraryRows(cfg);
-
-    var now = Date.now();
-    localStorage.setItem('ns3_last_synced_at', String(now));
-    updateSettingsSyncDot(true);
-
-    var parts = [];
-    if (logCount)     parts.push(logCount + ' entries');
-    if (foodCount)    parts.push(foodCount + ' foods');
-    if (deletedCount) parts.push(deletedCount + ' deleted');
-    if (el) el.textContent = (parts.length ? 'Pushed ' + parts.join(', ') : 'Nothing new to push') + ' · ' + formatRelativeTime(now);
-
+    
+    showToast('Synced ' + rows.length + ' entries ✓');
+    if (el) el.textContent = 'Last synced: ' + new Date().toLocaleString() + ' (' + rows.length + ' entries)';
     var sqlHelpEl2 = document.getElementById('sb-sql-help');
     if (sqlHelpEl2) sqlHelpEl2.style.display = 'none';
-    showToast('Synced ✓');
+    updateSettingsSyncDot(true);
   } catch(e) {
     showToast('Sync error: ' + e.message);
-    if (el) el.textContent = 'Sync error: ' + e.message;
-    updateSettingsSyncDot(false);
-  }
-}
-
-// ── Unified "Pull from cloud" — merge remote logs + library into local ──
-async function pullFromCloud() {
-  var cfg = getSupabaseConfig();
-  if (!hasSupabaseConfig(cfg)) {
-    showToast('Add Supabase URL and key in Settings');
-    return;
-  }
-  var el = document.getElementById('sync-status');
-  if (el) el.textContent = 'Pulling from cloud…';
-  try {
-    var newLogs  = await pullLogRows(cfg);
-    var newFoods = await pullLibraryRows(cfg);
-
-    var now = Date.now();
-    localStorage.setItem('ns3_last_synced_at', String(now));
-    updateSettingsSyncDot(true);
-
-    renderToday();
-    renderLibrary('');
-    var diaryPage = document.getElementById('page-diary');
-    if (diaryPage && diaryPage.classList.contains('active')) renderDiary();
-
-    if (el) el.textContent = 'Pulled ' + newLogs + ' new entries, ' + newFoods + ' foods · ' + formatRelativeTime(now);
-    showToast('Pulled from cloud ✓');
-  } catch(e) {
-    showToast('Pull error: ' + e.message);
-    if (el) el.textContent = 'Pull error: ' + e.message;
+    if (el) el.textContent = 'Error: ' + e.message;
     updateSettingsSyncDot(false);
   }
 }
@@ -3921,18 +3714,18 @@ function handleImportFile(event) {
       showToast("This doesn't look like a NutriScan export");
       return;
     }
-    showConfirmModal('Import this file?', 'This will replace all current data and cannot be undone.', function() {
-      var base = mkState();
-      var merged = {
-        goals: (data.goals && typeof data.goals === 'object') ? Object.assign({}, base.goals, data.goals) : base.goals,
-        days: data.days
-      };
-      saveState(merged);
-      renderToday();
-      var diaryPage = document.getElementById('page-diary');
-      if (diaryPage && diaryPage.classList.contains('active')) renderDiary();
-      showToast('Data imported');
-    }, 'Import');
+    if (!confirm('Import this file? This will replace all current data and cannot be undone.')) return;
+
+    var base = mkState();
+    var merged = {
+      goals: (data.goals && typeof data.goals === 'object') ? Object.assign({}, base.goals, data.goals) : base.goals,
+      days: data.days
+    };
+    saveState(merged);
+    renderToday();
+    var diaryPage = document.getElementById('page-diary');
+    if (diaryPage && diaryPage.classList.contains('active')) renderDiary();
+    showToast('Data imported');
   };
   reader.onerror = function() {
     showToast('Could not read file');
@@ -3940,11 +3733,10 @@ function handleImportFile(event) {
   reader.readAsText(file);
 }
 function clearAll() {
-  showConfirmModal('Delete all data?', 'This cannot be undone.', function() {
-    localStorage.removeItem('ns3');
-    renderToday();
-    showToast('All data cleared');
-  }, 'Delete');
+  if (!confirm('Delete all data? This cannot be undone.')) return;
+  localStorage.removeItem('ns3');
+  renderToday();
+  showToast('All data cleared');
 }
 var toastTimer;
 function showToast(msg) {
@@ -3953,27 +3745,6 @@ function showToast(msg) {
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2200);
-}
-
-// ── in-app confirm dialog (replaces native confirm()) ──
-var _confirmCallback = null;
-function showConfirmModal(title, msg, onConfirm, confirmLabel) {
-  document.getElementById('confirm-title').textContent = title;
-  document.getElementById('confirm-msg').textContent = msg;
-  document.getElementById('confirm-ok-btn').textContent = confirmLabel || 'Delete';
-  _confirmCallback = onConfirm;
-  document.getElementById('sc-confirm').classList.add('open');
-  document.getElementById('confirm-modal').classList.add('open');
-}
-function closeConfirmModal() {
-  document.getElementById('sc-confirm').classList.remove('open');
-  document.getElementById('confirm-modal').classList.remove('open');
-  _confirmCallback = null;
-}
-function confirmModalOk() {
-  var cb = _confirmCallback;
-  closeConfirmModal();
-  if (cb) cb();
 }
 
 
@@ -4815,11 +4586,17 @@ function saveEditedFood() {
   if (hasSupabaseConfig()) syncLibrary().catch(function(){});
 }
 
-// ── FOODS (library): push local rows (upsert) — used by both the
-//    unified Settings sync and silent background auto-push ──
-async function pushLibraryRows(cfg) {
+// ── Sync library to Supabase ───────────────────────────
+async function syncLibrary() {
+  var statusEl = document.getElementById('lib-sync-status');
+  var cfg = getSupabaseConfig();
+  if (!hasSupabaseConfig(cfg)) {
+    if (statusEl) statusEl.textContent = 'Supabase not configured';
+    showToast('Supabase not configured');
+    return;
+  }
   var lib = getLibrary();
-  if (!lib.length) return 0;
+  if (!lib.length) { showToast('Library is empty'); return; }
   var rows = lib.map(function(f) {
     return {
       id: f.id || foodId(),
@@ -4836,49 +4613,58 @@ async function pushLibraryRows(cfg) {
       updated_at: f.updated_at || Date.now()
     };
   });
-  var res = await fetch(supabaseRestUrl(cfg, cfg.foodsTable), {
-    method: 'POST',
-    headers: supabaseHeaders(cfg, {
-      'Content-Type': 'application/json',
-      'Prefer':        'return=minimal,resolution=merge-duplicates'
-    }),
-    body: JSON.stringify(rows)
-  });
-  if (res.status === 404) throw new Error('Table "' + cfg.foodsTable + '" not found — create it first');
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return rows.length;
+  if (statusEl) statusEl.textContent = 'Syncing ' + lib.length + ' foods…';
+  try {
+    var res = await fetch(supabaseRestUrl(cfg, cfg.foodsTable), {
+      method: 'POST',
+      headers: supabaseHeaders(cfg, {
+        'Content-Type': 'application/json',
+        'Prefer':        'return=minimal,resolution=merge-duplicates'
+      }),
+      body: JSON.stringify(rows)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (statusEl) statusEl.textContent = 'Synced ' + lib.length + ' foods · ' + new Date().toLocaleTimeString();
+    showToast('Library synced ✓');
+  } catch(e) {
+    if (statusEl) statusEl.textContent = 'Sync failed: ' + e.message;
+    showToast('Sync failed: ' + e.message);
+  }
 }
 
-// ── FOODS (library): pull remote rows, merging with local (remote wins on newer updated_at) ──
-async function pullLibraryRows(cfg) {
-  var res = await fetch(supabaseRestUrl(cfg, cfg.foodsTable, '?select=*&order=name.asc'), {
-    headers: supabaseHeaders(cfg)
-  });
-  if (res.status === 404) throw new Error('Table "' + cfg.foodsTable + '" not found — create it first');
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  var remote = await res.json();
-  if (!Array.isArray(remote)) throw new Error('Invalid response');
-
-  var local = getLibrary();
-  var merged = {};
-  local.forEach(function(f){ merged[f.id] = f; });
-  remote.forEach(function(f) {
-    f.barcode = cleanBarcodeForStorage(f.barcode || '');
-    if (!merged[f.id] || (f.updated_at||0) >= (merged[f.id].updated_at||0)) {
-      merged[f.id] = f;
-    }
-  });
-  var arr = Object.values(merged).sort(function(a,b){ return a.name.localeCompare(b.name); });
-  saveLibrary(arr);
-  return remote.length;
-}
-
-// ── Silent background auto-push, called after local library edits.
-//    Full push+pull with status/toast lives in Settings → Sync (syncNow/pullFromCloud) ──
-function syncLibrary() {
+// ── Pull library from Supabase (merge with local) ──────
+async function importLibraryFromSupabase() {
+  var statusEl = document.getElementById('lib-sync-status');
   var cfg = getSupabaseConfig();
-  if (!hasSupabaseConfig(cfg)) return Promise.resolve(0);
-  return pushLibraryRows(cfg);
+  if (!hasSupabaseConfig(cfg)) { showToast('Supabase not configured'); return; }
+  if (statusEl) statusEl.textContent = 'Pulling from cloud…';
+  try {
+    var res = await fetch(supabaseRestUrl(cfg, cfg.foodsTable, '?select=*&order=name.asc'), {
+      headers: supabaseHeaders(cfg)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var remote = await res.json();
+    if (!Array.isArray(remote)) throw new Error('Invalid response');
+
+    // Merge: remote wins on conflict (higher updated_at wins)
+    var local = getLibrary();
+    var merged = {};
+    local.forEach(function(f){ merged[f.id] = f; });
+    remote.forEach(function(f) {
+      f.barcode = cleanBarcodeForStorage(f.barcode || '');
+      if (!merged[f.id] || (f.updated_at||0) >= (merged[f.id].updated_at||0)) {
+        merged[f.id] = f;
+      }
+    });
+    var arr = Object.values(merged).sort(function(a,b){ return a.name.localeCompare(b.name); });
+    saveLibrary(arr);
+    renderLibrary('');
+    if (statusEl) statusEl.textContent = 'Pulled ' + remote.length + ' foods from cloud';
+    showToast('Library updated from cloud ✓');
+  } catch(e) {
+    if (statusEl) statusEl.textContent = 'Pull failed: ' + e.message;
+    showToast('Pull failed: ' + e.message);
+  }
 }
 
 // renderLibrary hook is called directly from openSheet via id check below
