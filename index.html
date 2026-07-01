@@ -113,7 +113,7 @@
 }
 
 /* ── reset ── */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;touch-action:manipulation;}
 html,body{height:100%;overflow:hidden;}
 body{
   font-family:'Google Sans',Roboto,system-ui,sans-serif;
@@ -121,6 +121,20 @@ body{
   display:flex;flex-direction:column;height:100dvh;
   -webkit-tap-highlight-color:transparent;
   -webkit-font-smoothing:antialiased;
+}
+
+/* ── landscape: center the app as a phone-width column ── */
+@media (orientation:landscape){
+  html{background:var(--surf3,#e4e7f0);}
+  body{
+    max-width:480px;
+    margin:0 auto;
+    box-shadow:0 0 32px rgba(20,24,60,.18);
+  }
+  .sheet{
+    max-width:480px;
+    margin:0 auto;
+  }
 }
 
 /* ━━━━━━━━━━ TOP APP BAR ━━━━━━━━━━ */
@@ -470,6 +484,32 @@ body{
   font-size:11px;font-weight:700;text-transform:uppercase;
   letter-spacing:.8px;color:var(--on-surf3);margin:18px 0 10px;
 }
+
+/* ── settings accordion ── */
+.acc-section{margin-bottom:10px;}
+.acc-header{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  background:var(--surf2);border:none;border-radius:var(--r);
+  padding:14px 16px;cursor:pointer;text-align:left;
+  font-family:inherit;font-size:14px;font-weight:700;color:var(--on-surf);
+  transition:background .12s;
+}
+.acc-header:hover{background:var(--surf3);}
+.acc-header-left{display:flex;align-items:center;gap:8px;min-width:0;}
+.acc-header-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.acc-header-badge{font-size:11.5px;font-weight:600;color:var(--on-surf3);white-space:nowrap;}
+.acc-dot{width:8px;height:8px;border-radius:50%;background:var(--accent-fat);flex-shrink:0;transition:background .2s;}
+.acc-dot.synced{background:var(--green);}
+.acc-chevron{width:20px;height:20px;fill:currentColor;color:var(--on-surf3);transition:transform .2s var(--ease);flex-shrink:0;}
+.acc-section.open .acc-chevron{transform:rotate(180deg);}
+.acc-panel{display:none;}
+.acc-section.open .acc-panel{display:block;}
+.acc-panel-inner{padding:14px 2px 4px;}
+.acc-panel-inner > .btn-s,
+.acc-panel-inner > .btn-d{width:100%;margin-top:8px;}
+.acc-panel-inner > .btn-s:first-child,
+.acc-panel-inner > .btn-d:first-child{margin-top:0;}
+
 
 /* auto-calc hint */
 .calc-hint{
@@ -926,7 +966,6 @@ const SUPABASE_FOODS = 'nutriscan_foods';
 <div class="topbar">
   <span class="topbar-title">NutriScan</span>
   <div class="topbar-right">
-    <button class="ib" onclick="openSheet('sh-goals')" title="Goals"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg></button>
     <button class="ib" onclick="openSheet('sh-tdee')" title="Calculator">
       <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
     </button>
@@ -1332,28 +1371,6 @@ const SUPABASE_FOODS = 'nutriscan_foods';
   </div>
 </div>
 
-<!-- ══ SHEET: GOALS ══ -->
-<div class="scrim" id="sc-goals" onclick="closeSheet('sh-goals')"></div>
-<div class="sheet" id="sh-goals">
-  <div class="sheet-handle"></div>
-  <div class="sheet-hdr">
-    <span class="sheet-title">Daily goals</span>
-    <button class="ib" onclick="closeSheet('sh-goals')"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
-  </div>
-  <div class="sheet-body">
-    <div class="field"><label class="flabel">Calories (kcal)</label><input class="finput" id="g-cal" type="number" inputmode="decimal"></div>
-    <div class="row2">
-      <div class="field"><label class="flabel">Protein (g)</label><input class="finput" id="g-prot"  type="number" inputmode="decimal"></div>
-      <div class="field"><label class="flabel">Carbs (g)</label>  <input class="finput" id="g-carbs" type="number" inputmode="decimal"></div>
-    </div>
-    <div class="row2">
-      <div class="field"><label class="flabel">Fat (g)</label>  <input class="finput" id="g-fat"   type="number" inputmode="decimal"></div>
-      <div class="field"><label class="flabel">Fiber (g)</label><input class="finput" id="g-fiber" type="number" inputmode="decimal"></div>
-    </div>
-    <button class="btn-p" onclick="saveGoals()">Save goals</button>
-  </div>
-</div>
-
 <!-- ══ SHEET: TDEE CALCULATOR ══ -->
 <div class="scrim" id="sc-tdee" onclick="closeSheet('sh-tdee')"></div>
 <div class="sheet" id="sh-tdee">
@@ -1412,37 +1429,49 @@ const SUPABASE_FOODS = 'nutriscan_foods';
     <button class="ib" onclick="closeSheet('sh-settings')"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
   </div>
   <div class="sheet-body">
-    <div class="fsec">Supabase sync</div>
-    <div class="field">
-      <label class="flabel">Project URL</label>
-      <input class="finput" id="sb-url" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off">
-    </div>
-    <div class="field">
-      <label class="flabel">Anon public key</label>
-      <input class="finput" id="sb-key" type="password" placeholder="eyJhbGciOi..." autocomplete="off">
-    </div>
-    <div class="row2">
-      <div class="field">
-        <label class="flabel">Logs table</label>
-        <input class="finput" id="sb-table-logs" type="text" placeholder="nutriscan_logs" autocomplete="off">
-      </div>
-      <div class="field">
-        <label class="flabel">Foods table</label>
-        <input class="finput" id="sb-table-foods" type="text" placeholder="nutriscan_foods" autocomplete="off">
-      </div>
-    </div>
-    <div id="sync-status" style="font-size:13px;color:var(--on-surf2);padding:10px 12px;background:var(--surf2);border-radius:var(--r);margin-bottom:12px;line-height:1.5;">
-      Not configured
-    </div>
-    <div style="display:flex;gap:8px;margin-top:4px;">
-      <button class="btn-s" style="flex:1;margin-top:0;padding:10px 6px;font-size:12.5px;" onclick="saveSupabaseSettings()">Save</button>
-      <button class="btn-s" style="flex:1;margin-top:0;padding:10px 6px;font-size:12.5px;" onclick="testSupabaseConnection()">Test</button>
-      <button class="btn-p" style="flex:1;margin-top:0;padding:10px 6px;font-size:12.5px;" onclick="syncNow()">Sync now</button>
-    </div>
-    <div id="sb-sql-help" style="background:var(--surf2);border-radius:var(--r);padding:12px 14px;margin-top:12px;font-size:12px;color:var(--on-surf2);line-height:1.6;">
-      <strong style="color:var(--on-surf);display:block;margin-bottom:4px;">Supabase table SQL</strong>
-      Run this in your Supabase SQL editor:<br>
-      <code style="font-size:11px;background:var(--outline2);padding:6px 8px;border-radius:6px;display:block;margin-top:6px;color:var(--on-surf);white-space:pre-wrap;">drop table if exists nutriscan_logs;
+    <div class="acc-section" id="acc-sync">
+      <button class="acc-header" type="button" onclick="toggleAccordion('acc-sync')">
+        <span class="acc-header-left">
+          <span class="acc-dot" id="acc-sync-dot"></span>
+          <span>Sync</span>
+        </span>
+        <span class="acc-header-right">
+          <span class="acc-header-badge" id="acc-sync-badge">Not connected</span>
+          <svg class="acc-chevron" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+        </span>
+      </button>
+      <div class="acc-panel">
+        <div class="acc-panel-inner">
+          <div class="field">
+            <label class="flabel">Project URL</label>
+            <input class="finput" id="sb-url" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off">
+          </div>
+          <div class="field">
+            <label class="flabel">Anon public key</label>
+            <input class="finput" id="sb-key" type="password" placeholder="eyJhbGciOi..." autocomplete="off">
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label class="flabel">Logs table</label>
+              <input class="finput" id="sb-table-logs" type="text" placeholder="nutriscan_logs" autocomplete="off">
+            </div>
+            <div class="field">
+              <label class="flabel">Foods table</label>
+              <input class="finput" id="sb-table-foods" type="text" placeholder="nutriscan_foods" autocomplete="off">
+            </div>
+          </div>
+          <div id="sync-status" style="font-size:13px;color:var(--on-surf2);padding:10px 12px;background:var(--surf2);border-radius:var(--r);margin-bottom:12px;line-height:1.5;">
+            Not configured
+          </div>
+          <div style="display:flex;gap:8px;margin-top:4px;">
+            <button class="btn-s" style="flex:1;margin-top:0;padding:10px 6px;font-size:12.5px;" onclick="saveSupabaseSettings()">Save</button>
+            <button class="btn-s" style="flex:1;margin-top:0;padding:10px 6px;font-size:12.5px;" onclick="testSupabaseConnection()">Test</button>
+            <button class="btn-p" style="flex:1;margin-top:0;padding:10px 6px;font-size:12.5px;" onclick="syncNow()">Sync now</button>
+          </div>
+          <div id="sb-sql-help" style="background:var(--surf2);border-radius:var(--r);padding:12px 14px;margin-top:12px;font-size:12px;color:var(--on-surf2);line-height:1.6;">
+            <strong style="color:var(--on-surf);display:block;margin-bottom:4px;">Supabase table SQL</strong>
+            Run this in your Supabase SQL editor:<br>
+            <code style="font-size:11px;background:var(--outline2);padding:6px 8px;border-radius:6px;display:block;margin-top:6px;color:var(--on-surf);white-space:pre-wrap;">drop table if exists nutriscan_logs;
 
 create table if not exists nutriscan_logs (
   id text primary key,
@@ -1474,10 +1503,27 @@ create policy "anon full access" on nutriscan_logs
 drop policy if exists "anon full access" on nutriscan_foods;
 create policy "anon full access" on nutriscan_foods
   for all to anon using (true) with check (true);</code>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="fsec" style="margin-top:20px;">Data</div>
-    <button class="btn-s" onclick="exportJSON()">Export JSON</button>
-    <button class="btn-d" onclick="clearAll()">Clear all data</button>
+
+    <div class="acc-section" id="acc-data">
+      <button class="acc-header" type="button" onclick="toggleAccordion('acc-data')">
+        <span class="acc-header-left"><span>Import &amp; export</span></span>
+        <span class="acc-header-right">
+          <svg class="acc-chevron" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+        </span>
+      </button>
+      <div class="acc-panel">
+        <div class="acc-panel-inner">
+          <button class="btn-s" onclick="exportJSON()">Export JSON</button>
+          <button class="btn-s" onclick="importJSON()">Import JSON</button>
+          <input type="file" id="import-file-input" accept="application/json,.json" style="display:none" onchange="handleImportFile(event)">
+          <button class="btn-d" onclick="clearAll()">Clear all data</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1652,16 +1698,30 @@ function hasSupabaseConfig(cfg) {
   return !!(cfg.url && cfg.key && cfg.logsTable && cfg.foodsTable);
 }
 function updateSettingsSyncDot(ok) {
-  var dot = document.getElementById('settings-sync-dot');
-  if (!dot) return;
-  if (!hasSupabaseConfig()) {
-    dot.classList.remove('synced');
+  var configured = hasSupabaseConfig();
+  if (!configured) {
     localStorage.removeItem('ns3_sync_ok');
-    return;
+  } else {
+    if (ok === undefined) ok = localStorage.getItem('ns3_sync_ok') === '1';
+    localStorage.setItem('ns3_sync_ok', ok ? '1' : '0');
   }
-  if (ok === undefined) ok = localStorage.getItem('ns3_sync_ok') === '1';
-  dot.classList.toggle('synced', !!ok);
-  localStorage.setItem('ns3_sync_ok', ok ? '1' : '0');
+  var synced = configured && localStorage.getItem('ns3_sync_ok') === '1';
+
+  var dot = document.getElementById('settings-sync-dot');
+  if (dot) dot.classList.toggle('synced', synced);
+
+  var accDot = document.getElementById('acc-sync-dot');
+  if (accDot) accDot.classList.toggle('synced', synced);
+
+  var badge = document.getElementById('acc-sync-badge');
+  if (badge) badge.textContent = !configured ? 'Not connected' : (synced ? 'Connected' : 'Needs attention');
+
+  var section = document.getElementById('acc-sync');
+  if (section) section.classList.toggle('open', !synced);
+}
+function toggleAccordion(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.toggle('open');
 }
 function supabaseRestUrl(cfg, table, query) {
   return cfg.url + '/rest/v1/' + encodeURIComponent(table) + (query || '');
@@ -2271,32 +2331,6 @@ function delItem(meal, idx) {
   showToast('Removed');
 }
 
-
-// ─────────────────────────────────────────────
-//  GOALS
-// ─────────────────────────────────────────────
-function openGoalsSheet() {
-  var g = getState().goals;
-  document.getElementById('g-cal').value   = g.cal;
-  document.getElementById('g-prot').value  = g.prot;
-  document.getElementById('g-carbs').value = g.carbs;
-  document.getElementById('g-fat').value   = g.fat;
-  document.getElementById('g-fiber').value = g.fiber;
-}
-function saveGoals() {
-  var s   = getState();
-  s.goals   = {
-    cal:   Number(document.getElementById('g-cal').value)   || 2000,
-    prot:  Number(document.getElementById('g-prot').value)  || 160,
-    carbs: Number(document.getElementById('g-carbs').value) || 200,
-    fat:   Number(document.getElementById('g-fat').value)   || 65,
-    fiber: Number(document.getElementById('g-fiber').value) || 30,
-  };
-  saveState(s);
-  renderToday();
-  closeSheet('sh-goals');
-  showToast('Goals saved');
-}
 
 // ─────────────────────────────────────────────
 //  TDEE CALCULATOR
@@ -3537,7 +3571,6 @@ function openSheet(id) {
   var scrimId = 'sc-' + id.replace('sh-','');
   document.getElementById(id).classList.add('open');
   document.getElementById(scrimId).classList.add('open');
-  if (id === 'sh-goals')    openGoalsSheet();
   if (id === 'sh-settings') updateSyncStatus();
   if (id === 'sh-library')  renderLibrary('');
 }
@@ -3658,6 +3691,46 @@ function exportJSON() {
   a.href   = URL.createObjectURL(blob);
   a.download = 'nutriscan-' + isoToday() + '.json';
   a.click();
+}
+function importJSON() {
+  var input = document.getElementById('import-file-input');
+  if (input) input.click();
+}
+function handleImportFile(event) {
+  var file = event.target.files && event.target.files[0];
+  event.target.value = ''; // allow re-selecting the same file later
+  if (!file) return;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var data;
+    try {
+      data = JSON.parse(e.target.result);
+    } catch (err) {
+      showToast('Invalid JSON file');
+      return;
+    }
+    if (!data || typeof data !== 'object' || !data.days || typeof data.days !== 'object') {
+      showToast("This doesn't look like a NutriScan export");
+      return;
+    }
+    if (!confirm('Import this file? This will replace all current data and cannot be undone.')) return;
+
+    var base = mkState();
+    var merged = {
+      goals: (data.goals && typeof data.goals === 'object') ? Object.assign({}, base.goals, data.goals) : base.goals,
+      days: data.days
+    };
+    saveState(merged);
+    renderToday();
+    var diaryPage = document.getElementById('page-diary');
+    if (diaryPage && diaryPage.classList.contains('active')) renderDiary();
+    showToast('Data imported');
+  };
+  reader.onerror = function() {
+    showToast('Could not read file');
+  };
+  reader.readAsText(file);
 }
 function clearAll() {
   if (!confirm('Delete all data? This cannot be undone.')) return;
