@@ -2449,25 +2449,35 @@ function submitAdd() {
   // Always save to food library when not already there (or update if it is).
   // This means every new food you log becomes searchable next time.
   // The checkbox lets advanced users opt out; default is always-save.
+  //
+  // EXCEPTION: if no reference size was given ("direct entry" — you typed
+  // the total calories for what you ate rather than a per-100g/per-serving
+  // label value), there is no reference amount to save. Saving it anyway
+  // with an assumed refsize would silently corrupt future re-use: picking
+  // it later for a different serving size would wrongly scale a number
+  // that was never meant to be scaled. So skip the save and say why,
+  // rather than guessing — same rule as the earlier fix that blocks
+  // submission when a reference size is given but the amount eaten isn't.
   var saveLibEl = document.getElementById('add-save-lib');
   var doSave = !saveLibEl || saveLibEl.checked;
-  if (doSave) {
-    var refSz  = parseFloat(document.getElementById('add-ref-size').value) || scaled.refSize || 100;
+  if (doSave && refSize > 0) {
     var libEntry = {
       name:    name,
-      refsize: refSz,
+      refsize: refSize,
       unit:    scaled.unit || 'g',
-      cal:     parseFloat(document.getElementById('add-cal-ref').value)    || entry.cal,
-      prot:    parseFloat(document.getElementById('add-prot-ref').value)   || entry.prot,
-      carbs:   parseFloat(document.getElementById('add-carbs-ref').value)  || entry.carbs,
-      fat:     parseFloat(document.getElementById('add-fat-ref').value)    || entry.fat,
-      fiber:   parseFloat(document.getElementById('add-fiber-ref').value)  || entry.fiber,
-      sodium:  parseFloat(document.getElementById('add-sodium-ref').value) || entry.sodium
+      cal:     calRef,
+      prot:    parseFloat(document.getElementById('add-prot-ref').value)   || 0,
+      carbs:   parseFloat(document.getElementById('add-carbs-ref').value)  || 0,
+      fat:     parseFloat(document.getElementById('add-fat-ref').value)    || 0,
+      fiber:   parseFloat(document.getElementById('add-fiber-ref').value)  || 0,
+      sodium:  parseFloat(document.getElementById('add-sodium-ref').value) || 0
     };
     upsertToLibrary(libEntry);
     if (hasSupabaseConfig()) {
       syncLibrary().catch(function(){});
     }
+  } else if (doSave && refSize === 0) {
+    showToast('Logged — not saved to library (no reference size given)');
   }
 
   closeSheet('sh-add');
@@ -3614,23 +3624,31 @@ function submitScan() {
   };
   if (scannedBarcode) entry.barcode = scannedBarcode;
 
-  // Auto-save scanned food to library (reference values from label fields)
-  var refSrv = parseFloat(document.getElementById('scan-serving').value) || 100;
-  var libFood = {
-    name:    name,
-    refsize: refSrv,
-    unit:    document.getElementById('scan-unit').value,
-    cal:     parseFloat(document.getElementById('scan-cal').value)    || 0,
-    prot:    parseFloat(document.getElementById('scan-prot').value)   || 0,
-    carbs:   parseFloat(document.getElementById('scan-carbs').value)  || 0,
-    fat:     parseFloat(document.getElementById('scan-fat').value)    || 0,
-    fiber:   parseFloat(document.getElementById('scan-fiber').value)  || 0,
-    sodium:  parseFloat(document.getElementById('scan-sodium').value) || 0
-  };
-  if (scannedBarcode) libFood.barcode = scannedBarcode;
-  if (libFood.cal > 0 || libFood.prot > 0) {
-    upsertToLibrary(libFood);
-    if (hasSupabaseConfig()) syncLibrary().catch(function(){});
+  // Auto-save scanned food to library (reference values from label fields).
+  // Skip when no reference size was given ("direct entry" — values typed
+  // are the total for what was eaten, not a per-100g/per-serving label
+  // value). Saving those under an assumed refsize would silently corrupt
+  // future re-use at a different serving size. Same rule as the manual
+  // add flow.
+  if (refSize > 0) {
+    var libFood = {
+      name:    name,
+      refsize: refSize,
+      unit:    document.getElementById('scan-unit').value,
+      cal:     parseFloat(document.getElementById('scan-cal').value)    || 0,
+      prot:    parseFloat(document.getElementById('scan-prot').value)   || 0,
+      carbs:   parseFloat(document.getElementById('scan-carbs').value)  || 0,
+      fat:     parseFloat(document.getElementById('scan-fat').value)    || 0,
+      fiber:   parseFloat(document.getElementById('scan-fiber').value)  || 0,
+      sodium:  parseFloat(document.getElementById('scan-sodium').value) || 0
+    };
+    if (scannedBarcode) libFood.barcode = scannedBarcode;
+    if (libFood.cal > 0 || libFood.prot > 0) {
+      upsertToLibrary(libFood);
+      if (hasSupabaseConfig()) syncLibrary().catch(function(){});
+    }
+  } else {
+    showToast('Logged — not saved to library (no reference size given)');
   }
 
   logEntry(document.getElementById('scan-meal').value, entry);
