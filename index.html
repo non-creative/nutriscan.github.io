@@ -55,61 +55,27 @@
   var mBlob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
   document.getElementById('pwa-manifest').setAttribute('href', URL.createObjectURL(mBlob));
 
-  // ── offline support ──────────────────────────────────────────
-  // Single-file app, so the service worker is built inline (like the
-  // manifest above) instead of shipped as a separate .js file.
-  // Note: blob: URL service worker registration isn't supported on
-  // Safari/iOS — this silently no-ops there and the app just behaves
-  // as it does today (online-only). Chrome/Edge/Android get offline
-  // caching of the app shell.
+  // ── offline support: REMOVED ────────────────────────────────
+  // A blob: URL service worker was registered here previously. Blob URLs
+  // only live as long as the document that created them — they don't
+  // survive an app restart. iOS aggressively suspends/reloads PWA web
+  // views between sessions, so the browser was left holding a service
+  // worker registration whose script source could no longer resolve
+  // correctly, which is a known cause of corrupted page loads (raw
+  // code/text rendering instead of the app). Rather than risk that,
+  // this actively removes any service worker + cache this page may have
+  // registered in an earlier version, and does not register a new one.
   if ('serviceWorker' in navigator) {
-    try {
-      var swSrc = "\
-var CACHE_NAME = 'nutriscan-shell-v1';\n\
-self.addEventListener('install', function(e) {\n\
-  self.skipWaiting();\n\
-  e.waitUntil(caches.open(CACHE_NAME).then(function(c) {\n\
-    return c.add(self.registration.scope).catch(function(){});\n\
-  }));\n\
-});\n\
-self.addEventListener('activate', function(e) {\n\
-  e.waitUntil(self.clients.claim());\n\
-});\n\
-self.addEventListener('fetch', function(e) {\n\
-  var req = e.request;\n\
-  if (req.method !== 'GET') return;\n\
-  if (req.mode === 'navigate') {\n\
-    e.respondWith(\n\
-      fetch(req).then(function(res) {\n\
-        var copy = res.clone();\n\
-        caches.open(CACHE_NAME).then(function(c) { c.put(self.registration.scope, copy); });\n\
-        return res;\n\
-      }).catch(function() {\n\
-        return caches.match(self.registration.scope).then(function(cached) {\n\
-          return cached || caches.match(req);\n\
-        });\n\
-      })\n\
-    );\n\
-    return;\n\
-  }\n\
-  var url = req.url;\n\
-  if (url.indexOf('fonts.googleapis.com') !== -1 || url.indexOf('fonts.gstatic.com') !== -1 || url.indexOf('jsdelivr.net') !== -1) {\n\
-    e.respondWith(\n\
-      caches.match(req).then(function(cached) {\n\
-        var fetchPromise = fetch(req).then(function(res) {\n\
-          caches.open(CACHE_NAME).then(function(c) { c.put(req, res.clone()); });\n\
-          return res;\n\
-        }).catch(function() { return cached; });\n\
-        return cached || fetchPromise;\n\
-      })\n\
-    );\n\
-  }\n\
-});\n\
-      ";
-      var swBlob = new Blob([swSrc], {type: 'application/javascript'});
-      var swUrl  = URL.createObjectURL(swBlob);
-      navigator.serviceWorker.register(swUrl, {scope: './'}).catch(function(){});
-    } catch(e) {}
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      regs.forEach(function(r) { r.unregister(); });
+    }).catch(function(){});
+  }
+  if (window.caches && caches.keys) {
+    caches.keys().then(function(keys) {
+      keys.forEach(function(k) {
+        if (k.indexOf('nutriscan-shell') === 0) caches.delete(k);
+      });
+    }).catch(function(){});
   }
 })();
 </script>
@@ -868,6 +834,37 @@ body{
   letter-spacing:.2px;text-transform:uppercase;
 }
 .seg-tab.active{background:var(--surface);color:var(--primary);box-shadow:var(--sh1);}
+
+/* ── library: "what should I eat" macro suggestions ── */
+.sugg-group{margin-bottom:14px;}
+.sugg-group-hdr{
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:700;color:var(--on-surf2);
+  margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px;
+}
+.sugg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sugg-row{
+  display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;
+  -webkit-overflow-scrolling:touch;
+}
+.sugg-card{
+  flex-shrink:0;min-width:136px;max-width:156px;
+  background:var(--surf2);border:none;border-radius:var(--r);
+  padding:10px 12px;cursor:pointer;text-align:left;font-family:inherit;
+  transition:background .12s;
+}
+.sugg-card:active{background:var(--surf3);}
+.sugg-card-name{
+  font-size:12.5px;font-weight:700;color:var(--on-surf);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;
+}
+.sugg-card-amount{font-size:16px;font-weight:800;line-height:1.3;}
+.sugg-card-macro{font-size:11px;color:var(--on-surf2);}
+.sugg-card-freq{font-size:10.5px;color:var(--primary);font-weight:600;margin-top:3px;}
+.sugg-empty-note{
+  font-size:12.5px;color:var(--on-surf3);text-align:center;
+  padding:14px 8px;background:var(--surf2);border-radius:var(--r);margin-bottom:4px;
+}
 
 
 
@@ -1713,6 +1710,7 @@ create policy "anon full access" on nutriscan_foods
     <button class="ib" onclick="closeSheet('sh-library')"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
   </div>
   <div class="sheet-body" style="display:flex;flex-direction:column;overflow:hidden;padding-bottom:0">
+    <div id="lib-suggestions" style="flex-shrink:0;overflow-y:auto;max-height:46%;"></div>
     <div class="food-search-wrap" style="margin-bottom:12px;flex-shrink:0">
       <div class="food-search-icon"><svg viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
       <input class="food-search" id="lib-filter" type="text" placeholder="Search foods…" oninput="renderLibrary(this.value)">
@@ -2142,6 +2140,34 @@ function getScaledEntry(prefix) {
 // ─────────────────────────────────────────────
 //  RENDER TODAY
 // ─────────────────────────────────────────────
+// Sums a day's logged items into daily totals. Shared by renderToday()
+// and the library macro-suggestion feature so both agree on the same
+// stored-cal-first, Atwater-fallback logic.
+function computeDayTotals(day) {
+  var totCal=0, totProt=0, totCarbs=0, totFat=0;
+  for (var mi=0; mi<MEALS.length; mi++) {
+    var m = MEALS[mi];
+    var items = (day.meals && day.meals[m]) || [];
+    for (var ii=0; ii<items.length; ii++) {
+      var it  = items[ii];
+      var ip  = Number(it.prot)  || 0;
+      var ic  = Number(it.carbs) || 0;
+      var iff = Number(it.fat)   || 0;
+      totProt  += ip;
+      totCarbs += ic;
+      totFat   += iff;
+      var storedCal = Number(it.cal) || 0;
+      totCal += storedCal > 0 ? storedCal : (ip*4 + ic*4 + iff*9);
+    }
+  }
+  return {
+    cal:   Math.round(totCal),
+    prot:  Math.round(totProt  * 10) / 10,
+    carbs: Math.round(totCarbs * 10) / 10,
+    fat:   Math.round(totFat   * 10) / 10
+  };
+}
+
 function renderToday() {
   // Auto-advance to today if the calendar date has rolled over since last render
   var todayIso = isoToday();
@@ -2162,29 +2188,11 @@ function renderToday() {
   //               all macros over their goals → cal will also be over
   //               (because saveEditedEntry always derives cal from macros
   //                when user edits macros, keeping them in sync).
-  var totCal=0, totProt=0, totCarbs=0, totFat=0;
-  for (var mi=0; mi<MEALS.length; mi++) { var m=MEALS[mi];
-    var _items=day.meals[m]||[]; for (var ii=0; ii<_items.length; ii++) { var it=_items[ii];
-      var ip = Number(it.prot)  || 0;
-      var ic = Number(it.carbs) || 0;
-      var iff = Number(it.fat)  || 0;
-      totProt  += ip;
-      totCarbs += ic;
-      totFat   += iff;
-      var storedCal = Number(it.cal) || 0;
-      // Use stored cal if it exists; derive from macros only if cal=0
-      var itemCal = storedCal > 0
-        ? storedCal
-        : (ip*4 + ic*4 + iff*9);
-      totCal += itemCal;
-    }
-  }
-
-  // Round to eliminate float drift, then floor for integer display
-  totCal   = Math.round(totCal);
-  totProt  = Math.round(totProt  * 10) / 10;
-  totCarbs = Math.round(totCarbs * 10) / 10;
-  totFat   = Math.round(totFat   * 10) / 10;
+  var totals   = computeDayTotals(day);
+  var totCal   = totals.cal;
+  var totProt  = totals.prot;
+  var totCarbs = totals.carbs;
+  var totFat   = totals.fat;
 
   // Calorie goal is the single source of truth for "remaining"
   // It is independent of macro goals (you can exceed macro gram-goals
@@ -3949,7 +3957,7 @@ function openSheet(id) {
   document.getElementById(id).classList.add('open');
   document.getElementById(scrimId).classList.add('open');
   if (id === 'sh-settings') updateSyncStatus();
-  if (id === 'sh-library')  renderLibrary('');
+  if (id === 'sh-library') { renderMacroSuggestions(); renderLibrary(''); }
 }
 function closeSheet(id) {
   var scrimId = 'sc-' + id.replace('sh-','');
@@ -4933,6 +4941,234 @@ function fillFromLibrary(food) {
 }
 
 // ── Render library sheet ───────────────────────────────
+// ── "What should I eat" — suggests library foods to close today's
+//    remaining protein/carb/fat gaps. Always evaluates against TODAY,
+//    regardless of which day is showing on the Today page, since you
+//    can only act on this for the day still in progress.
+//
+//    Ranking uses your FULL logging history (every day, not just
+//    today or yesterday): each food's macro-per-calorie density is
+//    the primary signal, boosted by how often you've actually logged
+//    it before — so proven, regularly-eaten foods edge out a
+//    theoretically-perfect pick you tried once. When history exists
+//    for a food, the card also shows your typical logged amount
+//    (averaged across every time you've eaten it) instead of the
+//    flat per-100g reference, and tapping it pre-fills that amount.
+function buildFoodHistoryIndex() {
+  var days = getState().days || {};
+  var byName = {}, byBarcode = {};
+  function addTo(map, key, it) {
+    if (!key) return;
+    if (!map[key]) map[key] = {count:0, cal:0, prot:0, carbs:0, fat:0, serving:0};
+    var b = map[key];
+    b.count++;
+    b.cal     += Number(it.cal)     || 0;
+    b.prot    += Number(it.prot)    || 0;
+    b.carbs   += Number(it.carbs)   || 0;
+    b.fat     += Number(it.fat)     || 0;
+    b.serving += Number(it.serving) || 0;
+  }
+  Object.keys(days).forEach(function(dateKey) {
+    var day = days[dateKey];
+    if (!day || !day.meals) return;
+    MEALS.forEach(function(m) {
+      (day.meals[m] || []).forEach(function(it) {
+        addTo(byName, (it.name || '').trim().toLowerCase(), it);
+        addTo(byBarcode, (it.barcode || '').trim(), it);
+      });
+    });
+  });
+  return {byName: byName, byBarcode: byBarcode};
+}
+function statsFromBucket(b) {
+  if (!b || !b.count) return null;
+  var n = b.count;
+  return {
+    count:      n,
+    avgCal:     Math.round(b.cal / n),
+    avgProt:    Math.round((b.prot / n)  * 10) / 10,
+    avgCarbs:   Math.round((b.carbs / n) * 10) / 10,
+    avgFat:     Math.round((b.fat / n)   * 10) / 10,
+    avgServing: Math.round((b.serving / n) * 10) / 10
+  };
+}
+function getFoodHistoryStats(food, index) {
+  var bc = (food.barcode || '').trim();
+  if (bc && index.byBarcode[bc]) return statsFromBucket(index.byBarcode[bc]);
+  var nameKey = (food.name || '').trim().toLowerCase();
+  if (nameKey && index.byName[nameKey]) return statsFromBucket(index.byName[nameKey]);
+  return null;
+}
+
+// Pure cooking fats — oils, butter, sprays — are technically "fat-dense"
+// so the ranking below would otherwise keep surfacing "eat 40g of olive
+// oil" as a top fat suggestion. Mathematically correct, not a realistic
+// food suggestion, so these are excluded outright. Includes Dutch terms
+// since the library may have entries in either language. Nut butters
+// (peanut butter, pindakaas, etc.) are real, diverse foods people eat —
+// excepted so they aren't caught by the "butter" substring.
+var SUGGESTION_EXCLUDE_TERMS = [
+  // english
+  'butter', 'margarine', 'oil', 'cooking spray', 'lard', 'shortening',
+  'ghee', 'tallow', 'duck fat', 'bacon fat', 'schmaltz', 'drippings',
+  // dutch
+  'boter', 'olie', 'kookspray', 'bakspray', 'reuzel', 'frituurvet',
+  'braadvet', 'spekvet', 'smeervet'
+];
+var SUGGESTION_EXCLUDE_EXCEPTIONS = [
+  'peanut butter', 'almond butter', 'cashew butter', 'nut butter', 'seed butter',
+  'pindakaas', 'amandelpasta', 'notenpasta', 'cashewpasta'
+];
+function isExcludedFromSuggestions(food) {
+  var name = ' ' + (food.name || '').toLowerCase().trim() + ' ';
+  var isException = SUGGESTION_EXCLUDE_EXCEPTIONS.some(function(ex) { return name.indexOf(ex) !== -1; });
+  if (isException) return false;
+  return SUGGESTION_EXCLUDE_TERMS.some(function(term) { return name.indexOf(term) !== -1; });
+}
+
+function renderMacroSuggestions() {
+  var el = document.getElementById('lib-suggestions');
+  if (!el) return;
+
+  var lib = getLibrary();
+  if (!lib.length) { el.innerHTML = ''; return; }
+
+  var g        = getState().goals;
+  var totals   = computeDayTotals(getDay(isoToday()));
+  var remaining = {
+    prot:  (g.prot  || 0) - totals.prot,
+    carbs: (g.carbs || 0) - totals.carbs,
+    fat:   (g.fat   || 0) - totals.fat
+  };
+  var historyIndex = buildFoodHistoryIndex();
+
+  // Calories are sometimes missing on older/manual library entries even
+  // though the macros are filled in — don't let a food silently drop out
+  // of suggestions just because .cal is 0. Derive it (Atwater) instead.
+  function effectiveCal(cal, prot, carbs, fat) {
+    cal = Number(cal) || 0;
+    if (cal > 0) return cal;
+    return Math.round((Number(prot)||0)*4 + (Number(carbs)||0)*4 + (Number(fat)||0)*9);
+  }
+
+  // Foods are saved at whatever reference size the label/entry used (100g,
+  // 1 egg, a 30g scoop...), which makes them hard to compare at a glance.
+  // For weight/volume foods, project onto a standard 100g/100ml basis so
+  // every card shows numbers on the same footing. Discrete units (piece,
+  // tbsp, cup) don't have a meaningful "100" quantity, so those keep their
+  // natural per-reference display instead.
+  function normalizeTo100(f) {
+    var refsize = Number(f.refsize) || 100;
+    var unit    = f.unit || 'g';
+    var cal     = effectiveCal(f.cal, f.prot, f.carbs, f.fat);
+    if ((unit === 'g' || unit === 'ml') && refsize > 0) {
+      var k = 100 / refsize;
+      return {
+        cal:   Math.round(cal * k),
+        prot:  Math.round((Number(f.prot)  || 0) * k * 10) / 10,
+        carbs: Math.round((Number(f.carbs) || 0) * k * 10) / 10,
+        fat:   Math.round((Number(f.fat)   || 0) * k * 10) / 10,
+        label: 'per 100' + unit
+      };
+    }
+    return {
+      cal:   Math.round(cal),
+      prot:  Number(f.prot)  || 0,
+      carbs: Number(f.carbs) || 0,
+      fat:   Number(f.fat)   || 0,
+      label: 'per ' + refsize + unit
+    };
+  }
+
+  function topPicks(macroKey, gap) {
+    if (gap <= 0.5) return [];
+    return lib
+      .filter(function(f) { return (Number(f[macroKey]) || 0) > 0 && !isExcludedFromSuggestions(f); })
+      .map(function(f) {
+        var hist = getFoodHistoryStats(f, historyIndex);
+        var cal100 = normalizeTo100(f); // also doubles as the Atwater-safe calorie source
+        var density  = cal100.cal > 0 ? (cal100[macroKey] / cal100.cal) : 0;
+        var freqBoost = hist ? Math.min(hist.count, 10) * 0.08 : 0;
+        return {food: f, hist: hist, per100: cal100, density: density, score: density * (1 + freqBoost)};
+      })
+      .filter(function(x) { return x.density > 0; })
+      .sort(function(a, b) { return b.score - a.score; })
+      .slice(0, 4);
+  }
+
+  var groups = [
+    {key:'prot',  label:'Protein', unit:'g', gap: remaining.prot,  color:'var(--accent-prot)'},
+    {key:'carbs', label:'Carbs',   unit:'g', gap: remaining.carbs, color:'var(--accent-carb)'},
+    {key:'fat',   label:'Fat',     unit:'g', gap: remaining.fat,   color:'var(--accent-fat)'}
+  ].filter(function(gr) { return gr.gap > 0.5; });
+
+  if (!groups.length) {
+    el.innerHTML = '<div class="sugg-empty-note">🎉 Protein, carbs, and fat goals are all met for today.</div>';
+    return;
+  }
+
+  groups.forEach(function(gr) { gr.picks = topPicks(gr.key, gr.gap); });
+  var rendered = groups.filter(function(gr) { return gr.picks.length > 0; });
+
+  if (!rendered.length) {
+    el.innerHTML =
+      '<div class="fsec" style="margin-top:0">Suggestions to hit today\'s goals</div>' +
+      '<div class="sugg-empty-note">No foods in your library help close today\'s remaining gap yet.</div>';
+    return;
+  }
+
+  // How much of this food (in its own unit) closes the remaining gap for
+  // this macro, computed from the food's own reference ratio — the same
+  // ratio the rest of the app's portion-scaling engine uses, so "eat 142g"
+  // here and typing 142g into Add Food agree exactly.
+  function roundAmount(n, unit) {
+    if (unit === 'g' || unit === 'ml') return Math.round(n);
+    return Math.round(n * 2) / 2; // nearest half-unit for piece/oz
+  }
+
+  var html = '<div class="fsec" style="margin-top:0">Suggestions to hit today\'s goals</div>';
+  rendered.forEach(function(gr) {
+    html += '<div class="sugg-group">' +
+      '<div class="sugg-group-hdr"><span class="sugg-dot" style="background:'+gr.color+'"></span>' +
+        gr.label + ' — ' + Math.round(gr.gap) + gr.unit + ' to go</div>' +
+      '<div class="sugg-row">' +
+        gr.picks.map(function(p) {
+          var f = p.food, hist = p.hist;
+          var refsize      = Number(f.refsize) || 100;
+          var unit         = f.unit || 'g';
+          var perUnitCal   = effectiveCal(f.cal, f.prot, f.carbs, f.fat) / refsize;
+          var perUnitMacro = (Number(f[gr.key]) || 0) / refsize;
+
+          var neededAmount = perUnitMacro > 0 ? roundAmount(gr.gap / perUnitMacro, unit) : 0;
+          var atCal   = Math.round(perUnitCal * neededAmount);
+          var atMacro = Math.round(perUnitMacro * neededAmount * 10) / 10;
+
+          var freqNote = hist ? '<div class="sugg-card-freq">Eaten '+hist.count+'x before</div>' : '';
+
+          return '<button class="sugg-card" data-id="'+esc(f.id)+'" data-amt="'+neededAmount+'">' +
+            '<div class="sugg-card-name">'+esc(f.name)+'</div>' +
+            '<div class="sugg-card-amount" style="color:'+gr.color+'">~'+neededAmount+unit+'</div>' +
+            '<div class="sugg-card-macro">'+atCal+' kcal · '+atMacro+gr.unit+' '+gr.label.toLowerCase()+'</div>' +
+            freqNote +
+          '</button>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+  });
+  el.innerHTML = html;
+
+  var cards = el.querySelectorAll('.sugg-card');
+  for (var ci = 0; ci < cards.length; ci++) {
+    (function(card) {
+      var id  = card.getAttribute('data-id');
+      var amt = card.getAttribute('data-amt');
+      card.addEventListener('click', function() {
+        quickAddFromLib(id, amt ? parseFloat(amt) : null);
+      });
+    })(cards[ci]);
+  }
+}
+
 function renderLibrary(filter) {
   var el = document.getElementById('lib-list');
   if (!el) return;
@@ -4980,13 +5216,22 @@ function renderLibrary(filter) {
 }
 
 // ── Quick-add from library (opens add sheet pre-filled) ─
-function quickAddFromLib(id) {
+function quickAddFromLib(id, amountOverride) {
   var food = getLibrary().filter(function(f){ return f.id===id; })[0];
   if (!food) return;
   closeSheet('sh-library');
   openAddSheet(null);
   // fill after sheet opens (slight delay for DOM)
-  setTimeout(function(){ fillFromLibrary(food); }, 80);
+  setTimeout(function(){
+    fillFromLibrary(food);
+    if (amountOverride) {
+      var servEl = document.getElementById('add-serving');
+      if (servEl) {
+        servEl.value = amountOverride;
+        scalePortions('add');
+      }
+    }
+  }, 80);
 }
 
 // ── Open edit sheet ────────────────────────────────────
