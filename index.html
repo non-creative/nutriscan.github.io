@@ -866,6 +866,28 @@ body{
   padding:14px 8px;background:var(--surf2);border-radius:var(--r);margin-bottom:4px;
 }
 
+/* ── AI meal plan ── */
+.mp-totals{background:var(--surf2);border-radius:var(--r);padding:12px 14px;margin-bottom:12px;font-size:12.5px;}
+.mp-totals-row{display:flex;justify-content:space-between;padding:3px 0;}
+.mp-totals-row.over{color:var(--error);font-weight:700;}
+.mp-note{font-size:12px;color:var(--on-surf3);font-style:italic;margin-bottom:14px;line-height:1.5;}
+.mp-meal{background:var(--surf2);border-radius:var(--r);padding:14px;margin-bottom:12px;}
+.mp-meal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.mp-meal-title{font-size:13px;font-weight:800;color:var(--on-surf);text-transform:uppercase;letter-spacing:.3px;}
+.mp-meal-cal{font-size:12px;color:var(--on-surf2);font-weight:600;}
+.mp-item{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;font-size:13px;border-bottom:1px solid var(--outline2);}
+.mp-item:last-of-type{border-bottom:none;}
+.mp-item-name{color:var(--on-surf);font-weight:600;}
+.mp-item-amt{color:var(--on-surf2);font-size:11.5px;margin-left:6px;font-weight:400;}
+.mp-item-macro{color:var(--on-surf3);font-size:11px;white-space:nowrap;flex-shrink:0;margin-left:8px;}
+.mp-log-btn{
+  width:100%;margin-top:10px;padding:9px;border:none;border-radius:var(--pill);
+  background:var(--prim-cont2);color:var(--primary);font-family:inherit;
+  font-size:12.5px;font-weight:700;cursor:pointer;
+}
+.mp-log-btn:active{background:var(--prim-cont);}
+.mp-log-btn:disabled{opacity:.5;}
+
 
 
 
@@ -1710,7 +1732,8 @@ create policy "anon full access" on nutriscan_foods
     <button class="ib" onclick="closeSheet('sh-library')"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
   </div>
   <div class="sheet-body" style="display:flex;flex-direction:column;overflow:hidden;padding-bottom:0">
-    <div id="lib-suggestions" style="flex-shrink:0;overflow-y:auto;max-height:46%;"></div>
+    <button class="btn-p" style="margin-top:0;margin-bottom:12px;flex-shrink:0" onclick="openSheet('sh-mealplan')">✨ Plan my day with AI</button>
+    <div id="lib-suggestions" style="flex-shrink:0;overflow-y:auto;max-height:40%;"></div>
     <div class="food-search-wrap" style="margin-bottom:12px;flex-shrink:0">
       <div class="food-search-icon"><svg viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
       <input class="food-search" id="lib-filter" type="text" placeholder="Search foods…" oninput="renderLibrary(this.value)">
@@ -1718,6 +1741,37 @@ create policy "anon full access" on nutriscan_foods
     <div id="lib-list" style="flex:1;overflow-y:auto;padding-bottom:16px"></div>
     <div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--outline2);padding-bottom:20px">
       <button class="btn-s" style="width:100%;margin-top:0" onclick="closeSheet('sh-library'); openSheet('sh-settings');">Manage cloud sync in Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SHEET: AI MEAL PLAN ══ -->
+<div class="scrim" id="sc-mealplan" onclick="closeSheet('sh-mealplan')"></div>
+<div class="sheet" id="sh-mealplan">
+  <div class="sheet-handle"></div>
+  <div class="sheet-hdr">
+    <span class="sheet-title">AI meal plan</span>
+    <button class="ib" onclick="closeSheet('sh-mealplan')"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+  </div>
+  <div class="sheet-body">
+    <div id="mp-setup">
+      <div class="fsec" style="margin-top:0">Gemini API key</div>
+      <p style="font-size:12.5px;color:var(--on-surf2);line-height:1.5;margin-bottom:12px;">
+        This calls Google's Gemini API straight from your browser using your own free key — nothing goes through any other server. Get a free key (no credit card needed) at
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;">aistudio.google.com/apikey</a>.
+      </p>
+      <div class="field">
+        <label class="flabel">API key</label>
+        <input class="finput" id="mp-api-key" type="password" placeholder="AIza…" autocomplete="off">
+      </div>
+      <button class="btn-p" onclick="saveGeminiKey()">Save key</button>
+    </div>
+
+    <div id="mp-ready" style="display:none;">
+      <div id="mp-status" style="font-size:12.5px;color:var(--on-surf2);margin-bottom:12px;"></div>
+      <div id="mp-result"></div>
+      <button class="btn-p" id="mp-generate-btn" style="margin-top:4px" onclick="generateMealPlan()">✨ Generate plan for today</button>
+      <button class="btn-s" style="font-size:12px;padding:8px;" onclick="document.getElementById('mp-setup').style.display='block'; document.getElementById('mp-ready').style.display='none';">Change API key</button>
     </div>
   </div>
 </div>
@@ -3958,6 +4012,7 @@ function openSheet(id) {
   document.getElementById(scrimId).classList.add('open');
   if (id === 'sh-settings') updateSyncStatus();
   if (id === 'sh-library') { renderMacroSuggestions(); renderLibrary(''); }
+  if (id === 'sh-mealplan') initMealPlanSheet();
 }
 function closeSheet(id) {
   var scrimId = 'sc-' + id.replace('sh-','');
@@ -5167,6 +5222,295 @@ function renderMacroSuggestions() {
       });
     })(cards[ci]);
   }
+}
+
+// ─────────────────────────────────────────────
+//  AI MEAL PLAN — Gemini
+// ─────────────────────────────────────────────
+// Calls Google's Gemini API directly from the browser with a key you
+// provide and store yourself (same pattern as the resume tool) — no
+// backend, no key of ours involved. Only ever proposes foods that exist
+// in your library; every number shown is recomputed locally from that
+// food's real reference macros rather than trusted from the AI's own
+// arithmetic.
+
+function getGeminiKey() {
+  return localStorage.getItem('ns3_gemini_key') || '';
+}
+function saveGeminiKey() {
+  var el = document.getElementById('mp-api-key');
+  var key = el ? el.value.trim() : '';
+  if (!key) { showToast('Enter an API key'); return; }
+  localStorage.setItem('ns3_gemini_key', key);
+  showToast('API key saved');
+  initMealPlanSheet();
+}
+function initMealPlanSheet() {
+  var hasKey = !!getGeminiKey();
+  var setupEl = document.getElementById('mp-setup');
+  var readyEl = document.getElementById('mp-ready');
+  if (setupEl) setupEl.style.display = hasKey ? 'none' : 'block';
+  if (readyEl) readyEl.style.display = hasKey ? 'block' : 'none';
+  if (hasKey) {
+    var statusEl = document.getElementById('mp-status');
+    var day = getDay(isoToday());
+    var mealsLeft = MEALS.filter(function(m) { return !(day.meals[m] && day.meals[m].length); });
+    if (statusEl) {
+      statusEl.textContent = mealsLeft.length
+        ? 'Planning: ' + mealsLeft.map(function(m){ return MEAL_LABELS[m]; }).join(', ')
+        : 'All meals are already logged for today.';
+    }
+  }
+}
+
+function computeItemMacros(food, amount) {
+  var refsize = Number(food.refsize) || 100;
+  var factor  = refsize > 0 ? (amount / refsize) : 0;
+  var calBase = Number(food.cal) || (Number(food.prot||0)*4 + Number(food.carbs||0)*4 + Number(food.fat||0)*9);
+  return {
+    cal:   Math.round(calBase * factor),
+    prot:  Math.round((Number(food.prot)  || 0) * factor * 10) / 10,
+    carbs: Math.round((Number(food.carbs) || 0) * factor * 10) / 10,
+    fat:   Math.round((Number(food.fat)   || 0) * factor * 10) / 10,
+    fiber: Math.round((Number(food.fiber) || 0) * factor * 10) / 10
+  };
+}
+
+function buildMealPlanPrompt() {
+  var g       = getState().goals;
+  var totals  = computeDayTotals(getDay(isoToday()));
+  var remaining = {
+    cal:   Math.max(0, Math.round((g.cal   || 0) - totals.cal)),
+    prot:  Math.max(0, Math.round((g.prot  || 0) - totals.prot)),
+    carbs: Math.max(0, Math.round((g.carbs || 0) - totals.carbs)),
+    fat:   Math.max(0, Math.round((g.fat   || 0) - totals.fat))
+  };
+  var day = getDay(isoToday());
+  var mealsToFill = MEALS.filter(function(m) { return !(day.meals[m] && day.meals[m].length); });
+
+  var lib = getLibrary().filter(function(f) { return !isExcludedFromSuggestions(f); });
+  var libForPrompt = lib.map(function(f) {
+    return {
+      id: f.id, name: f.name,
+      referenceAmount: (Number(f.refsize) || 100), unit: (f.unit || 'g'),
+      cal: Math.round(Number(f.cal) || (Number(f.prot||0)*4 + Number(f.carbs||0)*4 + Number(f.fat||0)*9)),
+      prot: Number(f.prot) || 0, carbs: Number(f.carbs) || 0, fat: Number(f.fat) || 0
+    };
+  });
+
+  return 'You are a practical nutrition planning assistant. Build a realistic meal plan using ONLY the foods listed below — never invent a food that is not in the list, and always reference foods by their exact "id".\n\n' +
+    'Remaining targets for the rest of today: ' + JSON.stringify(remaining) + ' (cal, prot/carbs/fat in grams).\n' +
+    'Meals still needed (only plan these): ' + JSON.stringify(mealsToFill) + '.\n' +
+    'Available foods (id, name, referenceAmount+unit, and cal/prot/carbs/fat AT that reference amount): ' + JSON.stringify(libForPrompt) + '.\n\n' +
+    'Rules:\n' +
+    '1. Only use food ids from the list above.\n' +
+    '2. Each meal must be a coherent, realistic combination that actually goes together (e.g. a protein + a carb + a vegetable) — not a random assortment of unrelated items.\n' +
+    '3. Favor foods and portions that are filling and higher in volume, not just calorie-dense — this is for satiety, not efficiency alone.\n' +
+    '4. Total calories across all planned meals must not exceed the remaining calorie budget.\n' +
+    '5. Get as close as reasonably possible to the remaining protein, carb, and fat targets across the whole plan.\n' +
+    '6. For each food, specify "amount" as a realistic number in that food\'s own unit (grams, ml, or piece count), scaled sensibly from its referenceAmount — avoid absurd single-item amounts.\n' +
+    '7. Only include keys for meals in the needed-meals list above.\n\n' +
+    'Respond with ONLY valid JSON, no markdown, no commentary, matching exactly this shape:\n' +
+    '{"meals":{"breakfast":[{"id":"<food id>","amount":<number>}],"lunch":[],"dinner":[],"snacks":[]},"note":"one short sentence on the approach"}';
+}
+
+// Google has been retiring Gemini models earlier than their own posted
+// deprecation dates (2.0 Flash and 2.5 Flash both went dark ahead of
+// schedule in 2026), so hardcoding one model name keeps breaking. Try a
+// short list of current candidates in order and fall through to the next
+// one specifically on a "model not found/retired" response, rather than
+// failing outright. Newest/likely-free-tier first.
+var GEMINI_MODEL_CANDIDATES = [
+  'gemini-flash-latest',
+  'gemini-3-flash',
+  'gemini-3.5-flash',
+  'gemini-3.1-flash-lite',
+  'gemini-2.5-flash-lite'
+];
+
+async function callGemini(prompt) {
+  var apiKey = getGeminiKey();
+  if (!apiKey) throw new Error('No API key set');
+
+  var lastError = null;
+  for (var i = 0; i < GEMINI_MODEL_CANDIDATES.length; i++) {
+    var model = GEMINI_MODEL_CANDIDATES[i];
+    var res;
+    try {
+      res = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(apiKey),
+        {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            contents: [{parts: [{text: prompt}]}],
+            generationConfig: {responseMimeType: 'application/json', temperature: 0.4}
+          })
+        }
+      );
+    } catch(networkErr) {
+      lastError = new Error('Network error reaching Gemini');
+      continue;
+    }
+
+    if (res.status === 404) {
+      // this specific model is retired/unavailable — try the next candidate
+      lastError = new Error('Model unavailable');
+      continue;
+    }
+    if (!res.ok) {
+      var errText = await res.text().catch(function(){ return ''; });
+      if (res.status === 400 || res.status === 403) throw new Error('Invalid API key');
+      throw new Error('HTTP ' + res.status + (errText ? ': ' + errText.slice(0,150) : ''));
+    }
+
+    var data = await res.json();
+    var text = data && data.candidates && data.candidates[0] && data.candidates[0].content &&
+               data.candidates[0].content.parts && data.candidates[0].content.parts[0] &&
+               data.candidates[0].content.parts[0].text;
+    if (!text) throw new Error('Empty response from AI');
+    try { return JSON.parse(text); }
+    catch(e) { throw new Error('AI response was not valid JSON'); }
+  }
+
+  throw new Error('None of the current Gemini models responded — Google may have changed its lineup again. ' + (lastError ? lastError.message : ''));
+}
+
+var lastMealPlan = null; // {meals: {breakfast:[{food,amount,macros}], ...}}
+
+async function generateMealPlan() {
+  var btn = document.getElementById('mp-generate-btn');
+  var resultEl = document.getElementById('mp-result');
+  var statusEl = document.getElementById('mp-status');
+  if (btn) { btn.disabled = true; btn.textContent = '✨ Generating…'; }
+  if (resultEl) resultEl.innerHTML = '<div class="ocr-st loading" style="justify-content:center;"><div class="spin"></div>Thinking through a plan…</div>';
+
+  try {
+    var lib = getLibrary();
+    if (!lib.length) throw new Error('Your library is empty — add some foods first');
+
+    var prompt = buildMealPlanPrompt();
+    var plan   = await callGemini(prompt);
+    if (!plan || !plan.meals || typeof plan.meals !== 'object') throw new Error('Unexpected response shape from AI');
+
+    var libById = {};
+    lib.forEach(function(f) { libById[f.id] = f; });
+
+    var resolved = {};
+    var skippedAny = false;
+    MEALS.forEach(function(m) {
+      var items = Array.isArray(plan.meals[m]) ? plan.meals[m] : [];
+      resolved[m] = items.map(function(it) {
+        var food = libById[it && it.id];
+        var amount = Number(it && it.amount) || 0;
+        if (!food || amount <= 0) { skippedAny = true; return null; }
+        return {food: food, amount: amount, macros: computeItemMacros(food, amount)};
+      }).filter(Boolean);
+    });
+
+    lastMealPlan = {meals: resolved, note: plan.note || ''};
+    renderMealPlanResult(lastMealPlan, skippedAny);
+    if (statusEl) statusEl.textContent = 'Plan ready — review below, then log the meals you\'ll actually eat.';
+  } catch(e) {
+    if (resultEl) resultEl.innerHTML = '<div class="ocr-st err">'+esc(e.message || 'Something went wrong')+'</div>';
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✨ Generate plan for today'; }
+  }
+}
+
+function renderMealPlanResult(plan, skippedAny) {
+  var el = document.getElementById('mp-result');
+  if (!el) return;
+
+  var grand = {cal:0, prot:0, carbs:0, fat:0};
+  var anyItems = false;
+  MEALS.forEach(function(m) {
+    (plan.meals[m] || []).forEach(function(it) {
+      anyItems = true;
+      grand.cal   += it.macros.cal;
+      grand.prot  += it.macros.prot;
+      grand.carbs += it.macros.carbs;
+      grand.fat   += it.macros.fat;
+    });
+  });
+
+  if (!anyItems) {
+    el.innerHTML = '<div class="sugg-empty-note">The AI couldn\'t build a plan from your current library and remaining targets. Try adding more foods to your library.</div>';
+    return;
+  }
+
+  var g = getState().goals;
+  var totals = computeDayTotals(getDay(isoToday()));
+  var remaining = {
+    cal:   Math.max(0, (g.cal||0)   - totals.cal),
+    prot:  Math.max(0, (g.prot||0)  - totals.prot),
+    carbs: Math.max(0, (g.carbs||0) - totals.carbs),
+    fat:   Math.max(0, (g.fat||0)   - totals.fat)
+  };
+
+  var html = '';
+  if (plan.note) html += '<div class="mp-note">'+esc(plan.note)+'</div>';
+  if (skippedAny) html += '<div class="mp-note">Some AI suggestions referenced foods outside your library and were skipped.</div>';
+
+  html += '<div class="mp-totals">' +
+    '<div class="mp-totals-row'+(grand.cal > remaining.cal+5 ? ' over':'')+'"><span>Calories</span><span>'+Math.round(grand.cal)+' / '+Math.round(remaining.cal)+'</span></div>' +
+    '<div class="mp-totals-row"><span>Protein</span><span>'+Math.round(grand.prot)+'g / '+Math.round(remaining.prot)+'g</span></div>' +
+    '<div class="mp-totals-row"><span>Carbs</span><span>'+Math.round(grand.carbs)+'g / '+Math.round(remaining.carbs)+'g</span></div>' +
+    '<div class="mp-totals-row"><span>Fat</span><span>'+Math.round(grand.fat)+'g / '+Math.round(remaining.fat)+'g</span></div>' +
+  '</div>';
+
+  MEALS.forEach(function(m) {
+    var items = plan.meals[m] || [];
+    if (!items.length) return;
+    var mealCal = items.reduce(function(s,it){ return s + it.macros.cal; }, 0);
+    html += '<div class="mp-meal" data-meal="'+m+'">' +
+      '<div class="mp-meal-hdr"><span class="mp-meal-title">'+esc(MEAL_LABELS[m])+'</span><span class="mp-meal-cal">'+Math.round(mealCal)+' kcal</span></div>' +
+      items.map(function(it) {
+        return '<div class="mp-item">' +
+          '<span><span class="mp-item-name">'+esc(it.food.name)+'</span><span class="mp-item-amt">'+it.amount+(it.food.unit||'g')+'</span></span>' +
+          '<span class="mp-item-macro">'+it.macros.cal+'kcal · P'+it.macros.prot+' C'+it.macros.carbs+' F'+it.macros.fat+'</span>' +
+        '</div>';
+      }).join('') +
+      '<button class="mp-log-btn" onclick="logPlannedMeal(\''+m+'\')">Log this '+esc(MEAL_LABELS[m].toLowerCase())+'</button>' +
+    '</div>';
+  });
+
+  el.innerHTML = html;
+}
+
+function logPlannedMeal(mealKey) {
+  if (!lastMealPlan || !lastMealPlan.meals[mealKey] || !lastMealPlan.meals[mealKey].length) return;
+  var items = lastMealPlan.meals[mealKey];
+  var day = getDay(isoToday());
+  var baseTs = Date.now();
+  items.forEach(function(it, i) {
+    day.meals[mealKey].push({
+      name:    it.food.name,
+      barcode: it.food.barcode || '',
+      cal:     it.macros.cal,
+      prot:    it.macros.prot,
+      carbs:   it.macros.carbs,
+      fat:     it.macros.fat,
+      fiber:   it.macros.fiber,
+      sugar:   0,
+      sodium:  0,
+      serving: it.amount,
+      unit:    it.food.unit || 'g',
+      scanned: false,
+      ts:      baseTs + i // avoid id collisions if logged in the same millisecond
+    });
+  });
+  saveDay(isoToday(), day);
+  if (currentDate === isoToday()) renderToday();
+  showToast(MEAL_LABELS[mealKey] + ' logged (' + items.length + ' item' + (items.length!==1?'s':'') + ')');
+  syncAuto();
+
+  // Remove the logged meal from the plan view so it can't be double-logged,
+  // and refresh the remaining-target totals shown above the other meals.
+  delete lastMealPlan.meals[mealKey];
+  lastMealPlan.meals[mealKey] = [];
+  renderMealPlanResult(lastMealPlan, false);
+  initMealPlanSheet();
 }
 
 function renderLibrary(filter) {
